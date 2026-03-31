@@ -90,7 +90,7 @@
     "input-otp": "^1.4.2",
     "jsdom": "^21.1.2",
     "lucide-react": "^0.546.0",
-    "next": "^16.0.1",
+    "next": "^16.2.1",
     "next-nprogress-bar": "^2.4.7",
     "next-safe-action": "^7.10.5",
     "next-seo": "^5.15.0",
