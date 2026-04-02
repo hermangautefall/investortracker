@@ -18,13 +18,13 @@ def get_checkpoint(job_name: str) -> datetime | None:
         .maybe_single()
         .execute()
     )
-    if not result.data or not result.data.get("last_run"):
-        log(f"No checkpoint found for {job_name} – will fetch all data", job=job_name)
+    if result is None or not result.data:
+        log(f"No checkpoint found for {job_name} – fetching all data", job=job_name)
         return None
     last_run = datetime.fromisoformat(result.data["last_run"])
     overlap = timedelta(hours=result.data.get("overlap_hours", 48))
     since = last_run - overlap
-    log(f"Checkpoint: {last_run.isoformat()} (fetching from {since.isoformat()})", job=job_name)
+    log(f"Checkpoint: fetching from {since.isoformat()}", job=job_name)
     return since
 
 
