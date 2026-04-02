@@ -21,6 +21,7 @@ jobs:
       - run: python jobs/fetch_congress.py
         working-directory: apps/pipeline
         env:
+          PYTHONPATH: .
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           EDGAR_IDENTITY: ${{ secrets.EDGAR_IDENTITY }}
@@ -43,6 +44,7 @@ jobs:
       - run: python jobs/fetch_form4.py
         working-directory: apps/pipeline
         env:
+          PYTHONPATH: .
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           EDGAR_IDENTITY: ${{ secrets.EDGAR_IDENTITY }}
@@ -66,6 +68,7 @@ jobs:
       - run: python jobs/enrich_prices.py
         working-directory: apps/pipeline
         env:
+          PYTHONPATH: .
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
@@ -86,5 +89,6 @@ jobs:
       - run: python jobs/refresh_aggregates.py
         working-directory: apps/pipeline
         env:
+          PYTHONPATH: .
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
