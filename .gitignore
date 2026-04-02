@@ -21,3 +21,9 @@ yarn-debug.log*
 yarn-error.log*
 
 *.tsbuildinfo
+.vercel
+
+# Python
+__pycache__/
+*.py[cod]
+apps/pipeline/.venv/

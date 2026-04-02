@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { match } from 'path-to-regexp';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -9,7 +8,7 @@ export async function updateSession(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -34,32 +33,8 @@ export async function updateSession(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  const protectedPages = [
-    '/dashboard',
-    '/private-item',
-    '/private-items',
-    '/items',
-    '/item',
-  ];
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // if user doesn't exist and the page is protected, redirect to login
-  if (
-    !user &&
-    protectedPages.some((page) => {
-      // eslint-disable-next-line no-unexpected-multiline
-      const matcher = match(page);
-      return matcher(request.nextUrl.pathname);
-    })
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
+  // Refresh the session cookie — no pages are protected yet.
+  await supabase.auth.getUser();
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:
