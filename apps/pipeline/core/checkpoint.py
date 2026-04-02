@@ -15,7 +15,7 @@ def get_checkpoint(job_name: str) -> datetime | None:
         client.table("pipeline_state")
         .select("last_run, overlap_hours")
         .eq("job_name", job_name)
-        .single()
+        .maybe_single()
         .execute()
     )
     if not result.data or not result.data.get("last_run"):
