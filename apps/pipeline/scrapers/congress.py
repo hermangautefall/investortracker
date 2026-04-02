@@ -1,11 +1,13 @@
 import requests
-from datetime import datetime, date
+from datetime import datetime
 
 from core.logger import log, log_warning
-from core.rate_limiter import SEC_LIMITER
 
-HOUSE_API = "https://housestockwatcher.com/api"
-SENATE_API = "https://senatestockwatcher.com/api"
+HOUSE_S3_URL = "https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json"
+HOUSE_API_URL = "https://housestockwatcher.com/api"
+
+SENATE_S3_URL = "https://senate-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json"
+SENATE_API_URL = "https://senatestockwatcher.com/api"
 
 
 def _parse_date(value: str | None) -> str | None:
@@ -29,35 +31,55 @@ def _clean(value: str | None) -> str | None:
     return None if v in ("--", "N/A", "") else v
 
 
+def _fetch_json(urls: list[str], job: str) -> list[dict] | None:
+    """
+    Try each URL in order, returning parsed JSON on first success.
+    Returns None if all sources fail.
+    """
+    for url in urls:
+        try:
+            log(f"Fetching from {url}", job=job)
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            # Some endpoints wrap data in {"data": [...]}
+            if isinstance(data, dict) and "data" in data:
+                return data["data"]
+            return data
+        except requests.exceptions.ConnectionError as e:
+            log_warning(f"Cannot reach {url}: {e}", job=job)
+        except requests.exceptions.Timeout:
+            log_warning(f"Timeout reaching {url}", job=job)
+        except Exception as e:
+            log_warning(f"Error fetching from {url}: {e}", job=job)
+    return None
+
+
 def fetch_house(since: datetime | None) -> list[dict]:
     """
-    Fetch congressional trades from House Stock Watcher API.
+    Fetch House congressional trades.
+    Tries S3 bucket first (more stable), falls back to API.
     Skips rows with no transactions (PDF-only submissions).
-    Filters to rows where disclosure_date >= since if provided.
-    Returns raw dicts with source='house_api'.
     """
-    SEC_LIMITER.wait()
-    response = requests.get(HOUSE_API, timeout=30)
-    response.raise_for_status()
-    data = response.json()
-    log(f"House API returned {len(data)} total records")
+    data = _fetch_json([HOUSE_S3_URL, HOUSE_API_URL], job="fetch_congress")
+    if data is None:
+        log_warning("All house data sources failed – returning empty list", job="fetch_congress")
+        return []
+
+    log(f"House: {len(data)} total records fetched")
 
     results = []
     skipped = 0
+    since_str = since.strftime("%Y-%m-%d") if since else None
+
     for row in data:
-        # Skip PDF submissions with no transaction data
         if not row.get("transactions"):
             skipped += 1
             continue
 
         disclosure_str = _parse_date(row.get("disclosure_date") or row.get("disclosureDate"))
-        if since and disclosure_str:
-            try:
-                disc_date = datetime.strptime(disclosure_str, "%Y-%m-%d")
-                if disc_date < since:
-                    continue
-            except ValueError:
-                pass
+        if since_str and disclosure_str and disclosure_str < since_str:
+            continue
 
         for txn in row.get("transactions", []):
             results.append({
@@ -83,34 +105,34 @@ def fetch_house(since: datetime | None) -> list[dict]:
 
 def fetch_senate(since: datetime | None) -> list[dict]:
     """
-    Fetch congressional trades from Senate Stock Watcher API.
-    Filters to rows where date_received >= since if provided.
-    Returns raw dicts with source='senate_api'.
+    Fetch Senate congressional trades.
+    Tries S3 bucket first (more stable), falls back to API.
     """
-    SEC_LIMITER.wait()
-    response = requests.get(SENATE_API, timeout=30)
-    response.raise_for_status()
-    data = response.json()
-    log(f"Senate API returned {len(data)} total records")
+    data = _fetch_json([SENATE_S3_URL, SENATE_API_URL], job="fetch_congress")
+    if data is None:
+        log_warning("All senate data sources failed – returning empty list", job="fetch_congress")
+        return []
+
+    log(f"Senate: {len(data)} total records fetched")
 
     results = []
+    since_str = since.strftime("%Y-%m-%d") if since else None
+
     for row in data:
         if not row.get("transactions"):
             continue
 
         received_str = _parse_date(row.get("date_received") or row.get("disclosure_date"))
-        if since and received_str:
-            try:
-                recv_date = datetime.strptime(received_str, "%Y-%m-%d")
-                if recv_date < since:
-                    continue
-            except ValueError:
-                pass
+        if since_str and received_str and received_str < since_str:
+            continue
 
         for txn in row.get("transactions", []):
+            name_parts = [row.get("first_name", ""), row.get("last_name", "")]
+            name = _clean(" ".join(p for p in name_parts if p)) or _clean(
+                row.get("senator_name") or row.get("name")
+            )
             results.append({
-                "politician_name": _clean(row.get("first_name", "") + " " + row.get("last_name", ""))
-                    or _clean(row.get("senator_name") or row.get("name")),
+                "politician_name": name,
                 "chamber": "senate",
                 "party": _clean(row.get("party")),
                 "state": _clean(row.get("state")),
