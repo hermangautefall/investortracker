@@ -44,7 +44,7 @@ def fetch_form4(since: datetime) -> list[dict]:
     log(f"Fetching Form 4 filings since {since_date}", job="fetch_form4")
 
     try:
-        filings = get_filings(form="4", date=str(since_date))
+        filings = get_filings(form="4", filing_date=str(since_date))
     except Exception as e:
         log_warning(f"Could not get filings list: {e}", job="fetch_form4")
         return []
@@ -97,7 +97,8 @@ def fetch_form4(since: datetime) -> list[dict]:
         except Exception:
             pass
 
-        form4_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{filing.accession_no.replace('-', '')}/{filing.accession_no}-index.htm" if cik else None
+        accession_no = getattr(filing, "accession_number", None) or getattr(filing, "accession_no", None) or ""
+        form4_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession_no.replace('-', '')}/{accession_no}-index.htm" if cik and accession_no else None
 
         for _, txn_row in df.iterrows():
             raw_code = txn_row.get("transaction_code") or txn_row.get("transactionCode")
