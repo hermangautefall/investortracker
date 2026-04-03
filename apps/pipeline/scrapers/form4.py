@@ -1,3 +1,4 @@
+import math
 import os
 from datetime import datetime
 
@@ -93,9 +94,13 @@ def fetch_form4(since: datetime) -> list[dict]:
             if not trade_type:
                 continue
 
-            shares = row.get("Shares")
-            price = row.get("Price")
-            value = row.get("Value")
+            shares_raw = row.get("Shares")
+            price_raw = row.get("Price")
+            value_raw = row.get("Value")
+            # pandas NaN values must be converted to None
+            shares = None if (shares_raw is None or (isinstance(shares_raw, float) and math.isnan(shares_raw))) else shares_raw
+            price = None if (price_raw is None or (isinstance(price_raw, float) and math.isnan(price_raw))) else price_raw
+            value = None if (value_raw is None or (isinstance(value_raw, float) and math.isnan(value_raw))) else value_raw
             txn_date = row.get("Date")
             ticker = str(row.get("Ticker") or "").strip().upper()
             insider = str(row.get("Insider") or "").strip()
@@ -110,9 +115,11 @@ def fetch_form4(since: datetime) -> list[dict]:
             raw_dict: dict = {}
             for k, v in row.to_dict().items():
                 if hasattr(v, "item"):
-                    raw_dict[k] = v.item()
-                elif hasattr(v, "isoformat"):
+                    v = v.item()
+                if hasattr(v, "isoformat"):
                     raw_dict[k] = v.isoformat()
+                elif isinstance(v, float) and (v != v):  # NaN check
+                    raw_dict[k] = None
                 elif not isinstance(v, (str, int, float, bool, type(None))):
                     raw_dict[k] = str(v)
                 else:
