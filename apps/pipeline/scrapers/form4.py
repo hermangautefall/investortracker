@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 
-import pandas as pd
 from edgar import get_filings, set_identity
 
 from core.logger import log, log_warning
@@ -10,10 +9,10 @@ from core.rate_limiter import SEC_LIMITER
 FORM4_SOURCE = "sec_form4"
 MAX_FILINGS_PER_RUN = 500
 
-_TRANSACTION_TYPE_MAP = {
+_CODE_MAP = {
     "P": "buy",
     "S": "sell",
-    "A": "buy",   # Award (treated as acquisition)
+    "A": "buy",   # Award
     "D": "sell",  # Disposition
     "M": "option_exercise",
     "C": "option_exercise",
@@ -22,18 +21,18 @@ _TRANSACTION_TYPE_MAP = {
 
 
 def _map_trade_type(code: str | None) -> str | None:
-    """Map SEC transaction code to canonical trade type."""
     if not code:
         return None
-    return _TRANSACTION_TYPE_MAP.get(str(code).strip().upper())
+    return _CODE_MAP.get(str(code).strip().upper())
 
 
 def fetch_form4(since: datetime) -> list[dict]:
     """
     Fetch Form 4 insider trade filings from SEC EDGAR using edgartools.
-    Applies SEC_LIMITER between each filing fetch.
-    Limits to MAX_FILINGS_PER_RUN filings per run to prevent timeouts.
-    Returns list of dicts with all required insider trade fields.
+    Uses form4.to_dataframe() which returns columns:
+      Transaction Type, Code, Description, Shares, Price, Value,
+      Date, Form, Issuer, Ticker, Insider, Position, Remaining Shares
+    Limits to MAX_FILINGS_PER_RUN per run to prevent timeouts.
     """
     identity = os.getenv("EDGAR_IDENTITY")
     if not identity:
@@ -55,84 +54,80 @@ def fetch_form4(since: datetime) -> list[dict]:
 
     for filing in filings:
         if processed >= MAX_FILINGS_PER_RUN:
-            log(f"Reached limit of {MAX_FILINGS_PER_RUN} filings – will continue from checkpoint next run", job="fetch_form4")
+            log(
+                f"Reached limit of {MAX_FILINGS_PER_RUN} filings – "
+                "will continue from checkpoint next run",
+                job="fetch_form4",
+            )
             break
-
-        filing_date_str = str(filing.filing_date) if hasattr(filing, "filing_date") else None
 
         SEC_LIMITER.wait()
         try:
             form4 = filing.obj()
+            if form4 is None:
+                skipped += 1
+                continue
+
+            df = form4.to_dataframe()
+            if df is None or df.empty:
+                skipped += 1
+                continue
+
         except Exception as e:
-            log_warning(f"Could not parse filing {filing.accession_number}: {e}", job="fetch_form4")
+            log_warning(f"Could not parse filing {filing.accession_no}: {e}", job="fetch_form4")
             skipped += 1
             continue
 
-        try:
-            df: pd.DataFrame = form4.transactions
-        except Exception:
-            skipped += 1
-            continue
+        cik = str(filing.cik) if filing.cik else ""
+        filing_date_str = str(filing.filing_date) if filing.filing_date else None
+        accession_no = filing.accession_no or ""
+        form4_url = (
+            f"https://www.sec.gov/Archives/edgar/data/{cik}/"
+            f"{accession_no.replace('-', '')}/{accession_no}-index.htm"
+            if cik and accession_no else None
+        )
 
-        if df is None or df.empty:
-            skipped += 1
-            continue
-
-        # Extract issuer/company info
-        ticker = None
-        company_name = None
-        try:
-            issuer = form4.issuer
-            ticker = str(issuer.trading_symbol).strip().upper() if hasattr(issuer, "trading_symbol") else None
-            company_name = str(issuer.name).strip() if hasattr(issuer, "name") else None
-        except Exception:
-            pass
-
-        # Extract insider info
-        insider_name = None
-        cik = str(filing.cik) if hasattr(filing, "cik") else None
-        try:
-            owner = form4.reporting_owner
-            insider_name = str(owner.name).strip() if hasattr(owner, "name") else None
-        except Exception:
-            pass
-
-        accession_no = getattr(filing, "accession_number", None) or getattr(filing, "accession_no", None) or ""
-        form4_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession_no.replace('-', '')}/{accession_no}-index.htm" if cik and accession_no else None
-
-        for _, txn_row in df.iterrows():
-            raw_code = txn_row.get("transaction_code") or txn_row.get("transactionCode")
-            trade_type = _map_trade_type(raw_code)
+        for _, row in df.iterrows():
+            code = str(row.get("Code") or "")
+            trade_type = _map_trade_type(code)
             if not trade_type:
-                continue  # Skip non-standard transaction codes
+                continue
 
-            shares = txn_row.get("shares") or txn_row.get("transactionShares")
-            price = txn_row.get("price_per_share") or txn_row.get("transactionPricePerShare")
-            txn_date = txn_row.get("transaction_date") or txn_row.get("transactionDate")
+            shares = row.get("Shares")
+            price = row.get("Price")
+            value = row.get("Value")
+            txn_date = row.get("Date")
+            ticker = str(row.get("Ticker") or "").strip().upper()
+            insider = str(row.get("Insider") or "").strip()
+            company = str(row.get("Issuer") or "").strip()
 
-            try:
-                total_value = float(shares or 0) * float(price or 0) if shares and price else None
-            except (ValueError, TypeError):
-                total_value = None
+            # to_dataframe() combines all owners — use first name only
+            insider_name = insider.split(" / ")[0].strip() if insider else "Unknown"
 
-            raw_dict = txn_row.to_dict()
-            # Convert non-serializable types
-            for k, v in raw_dict.items():
+            if not ticker:
+                continue  # Skip rows with no ticker (derivatives without symbol)
+
+            raw_dict: dict = {}
+            for k, v in row.to_dict().items():
                 if hasattr(v, "item"):
                     raw_dict[k] = v.item()
+                elif hasattr(v, "isoformat"):
+                    raw_dict[k] = v.isoformat()
                 elif not isinstance(v, (str, int, float, bool, type(None))):
                     raw_dict[k] = str(v)
+                else:
+                    raw_dict[k] = v
 
             results.append({
-                "insider_name": insider_name or "Unknown",
-                "cik": cik or "",
-                "ticker": ticker or "",
-                "company_name": company_name,
+                "insider_name": insider_name,
+                "cik": cik,
+                "ticker": ticker,
+                "company_name": company or None,
                 "trade_type": trade_type,
                 "shares": int(shares) if shares is not None else None,
                 "price_per_share": float(price) if price is not None else None,
-                "total_value": total_value,
-                "trade_date": str(txn_date)[:10] if txn_date else filing_date_str,
+                "total_value": float(value) if value is not None else None,
+                "trade_date": txn_date.strftime("%Y-%m-%d") if hasattr(txn_date, "strftime") else (str(txn_date)[:10] if txn_date else filing_date_str),
                 "filing_date": filing_date_str,
                 "form4_url": form4_url,
                 "source": FORM4_SOURCE,
@@ -141,5 +136,9 @@ def fetch_form4(since: datetime) -> list[dict]:
 
         processed += 1
 
-    log(f"Form 4: {len(results)} transactions from {processed} filings, {skipped} filings skipped", job="fetch_form4")
+    log(
+        f"Form 4: {len(results)} transactions from {processed} filings, "
+        f"{skipped} filings skipped",
+        job="fetch_form4",
+    )
     return results

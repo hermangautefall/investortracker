@@ -136,6 +136,21 @@ investortracker/
 
 ---
 
+## Data source status
+
+| Source | Status | Notes |
+|---|---|---|
+| SEC Form 4 (insider trades) | **WORKING** | edgartools `get_filings(form="4", filing_date=...)` |
+| Congressional trades (House) | **PENDING** | FMP paid tier required — scraper is written and correct, do not remove |
+| Congressional trades (Senate) | **PENDING** | FMP paid tier required — scraper is written and correct, do not remove |
+
+> **Congress scraper note:** `apps/pipeline/scrapers/congress.py` is correctly
+> implemented using the Financial Modeling Prep (FMP) API (`FMP_API_KEY`).
+> The code is ready — it only needs a paid FMP subscription to return data.
+> Do NOT remove or disable this scraper.
+
+---
+
 ## Pipeline conventions
 
 ### Incremental processing
@@ -247,9 +262,10 @@ populated yet. Do not delete or modify them.
 | `OPENFIGI_API_KEY` | Pipeline | Free tier API key |
 | `TELEGRAM_BOT_TOKEN` | Pipeline | For failure alerts |
 | `TELEGRAM_CHAT_ID` | Pipeline | For failure alerts |
+| `FMP_API_KEY` | Pipeline | Financial Modeling Prep – for congress trades (paid tier) |
 | `NEXT_PUBLIC_GA_ID` | Frontend | Google Analytics – set at launch |
 
 ---
 
 *Keep this file updated as the project evolves.*
-*Last updated: project setup*
+*Last updated: 2026-04-04*
