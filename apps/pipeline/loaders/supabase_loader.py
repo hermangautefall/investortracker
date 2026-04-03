@@ -82,6 +82,7 @@ def load_insider_trades(
         dedup_key = make_form4_key({
             "cik": trade.cik,
             "accession_no": raw.get("accession_no", ""),
+            "insider_name": trade.insider_name,
             "ticker": trade.ticker,
             "trade_date": str(trade.trade_date),
             "shares": trade.shares,

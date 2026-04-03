@@ -19,11 +19,13 @@ def make_congress_key(row: dict) -> str:
 def make_form4_key(row: dict) -> str:
     """
     Stable dedup key for Form 4 insider trades.
-    Includes accession_no to distinguish multiple transactions within one filing.
+    Includes accession_no + insider_name to handle filings with multiple
+    reporting owners that share the same accession number.
     """
     parts = [
         str(row.get("cik", "") or ""),
         str(row.get("accession_no", "") or ""),
+        str(row.get("insider_name", "") or ""),
         str(row.get("ticker", "") or ""),
         str(row.get("trade_date", "") or ""),
         str(row.get("shares", "") or ""),
