@@ -77,6 +77,7 @@ def load_insider_trades(
     inserted = 0
     skipped = 0
 
+    seen_keys: set[str] = set()
     rows = []
     for trade, raw in zip(trades, raw_rows):
         dedup_key = make_form4_key({
@@ -88,6 +89,11 @@ def load_insider_trades(
             "shares": trade.shares,
             "trade_type": trade.trade_type,
         })
+
+        if dedup_key in seen_keys:
+            skipped += 1
+            continue
+        seen_keys.add(dedup_key)
 
         insider_id = _upsert_insider(client, trade)
 
@@ -111,7 +117,7 @@ def load_insider_trades(
         batch = rows[i:i + BATCH_SIZE]
         try:
             client.table("insider_trades").upsert(
-                batch, on_conflict="dedup_key"
+                batch, on_conflict="dedup_key", ignore_duplicates=True
             ).execute()
             inserted += len(batch)
             log(f"Batch {i // BATCH_SIZE + 1}: inserted {len(batch)} rows", job=job)
