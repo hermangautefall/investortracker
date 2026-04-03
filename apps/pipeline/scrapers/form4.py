@@ -128,6 +128,7 @@ def fetch_form4(since: datetime) -> list[dict]:
             results.append({
                 "insider_name": insider_name,
                 "cik": cik,
+                "accession_no": accession_no,
                 "ticker": ticker,
                 "company_name": company or None,
                 "trade_type": trade_type,

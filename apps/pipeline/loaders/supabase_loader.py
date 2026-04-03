@@ -81,6 +81,7 @@ def load_insider_trades(
     for trade, raw in zip(trades, raw_rows):
         dedup_key = make_form4_key({
             "cik": trade.cik,
+            "accession_no": raw.get("accession_no", ""),
             "ticker": trade.ticker,
             "trade_date": str(trade.trade_date),
             "shares": trade.shares,
