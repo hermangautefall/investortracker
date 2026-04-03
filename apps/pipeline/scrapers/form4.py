@@ -52,6 +52,7 @@ def fetch_form4(since: datetime) -> list[dict]:
     results = []
     processed = 0
     skipped = 0
+    seen_accessions: set[str] = set()
 
     for filing in filings:
         if processed >= MAX_FILINGS_PER_RUN:
@@ -61,6 +62,14 @@ def fetch_form4(since: datetime) -> list[dict]:
                 job="fetch_form4",
             )
             break
+
+        accession_no = filing.accession_no or ""
+        if accession_no and accession_no in seen_accessions:
+            # Group filing: multiple CIKs share one accession — already processed
+            skipped += 1
+            continue
+        if accession_no:
+            seen_accessions.add(accession_no)
 
         SEC_LIMITER.wait()
         try:
@@ -81,7 +90,6 @@ def fetch_form4(since: datetime) -> list[dict]:
 
         cik = str(filing.cik) if filing.cik else ""
         filing_date_str = str(filing.filing_date) if filing.filing_date else None
-        accession_no = filing.accession_no or ""
         form4_url = (
             f"https://www.sec.gov/Archives/edgar/data/{cik}/"
             f"{accession_no.replace('-', '')}/{accession_no}-index.htm"
