@@ -8,6 +8,7 @@ from core.logger import log, log_warning
 from core.rate_limiter import SEC_LIMITER
 
 FORM4_SOURCE = "sec_form4"
+MAX_FILINGS_PER_RUN = 500
 
 _TRANSACTION_TYPE_MAP = {
     "P": "buy",
@@ -27,10 +28,11 @@ def _map_trade_type(code: str | None) -> str | None:
     return _TRANSACTION_TYPE_MAP.get(str(code).strip().upper())
 
 
-def fetch_form4(since: datetime | None) -> list[dict]:
+def fetch_form4(since: datetime) -> list[dict]:
     """
     Fetch Form 4 insider trade filings from SEC EDGAR using edgartools.
     Applies SEC_LIMITER between each filing fetch.
+    Limits to MAX_FILINGS_PER_RUN filings per run to prevent timeouts.
     Returns list of dicts with all required insider trade fields.
     """
     identity = os.getenv("EDGAR_IDENTITY")
@@ -38,30 +40,31 @@ def fetch_form4(since: datetime | None) -> list[dict]:
         raise ValueError("EDGAR_IDENTITY environment variable must be set")
     set_identity(identity)
 
-    log("Fetching Form 4 filings from SEC EDGAR", job="fetch_form4")
-    filings = get_filings(form="4")
+    since_date = since.date() if isinstance(since, datetime) else since
+    log(f"Fetching Form 4 filings since {since_date}", job="fetch_form4")
+
+    try:
+        filings = get_filings(form="4", date=str(since_date))
+    except Exception as e:
+        log_warning(f"Could not get filings list: {e}", job="fetch_form4")
+        return []
 
     results = []
     processed = 0
     skipped = 0
 
     for filing in filings:
-        filing_date_str = str(filing.filing_date) if hasattr(filing, "filing_date") else None
+        if processed >= MAX_FILINGS_PER_RUN:
+            log(f"Reached limit of {MAX_FILINGS_PER_RUN} filings – will continue from checkpoint next run", job="fetch_form4")
+            break
 
-        # Filter by date if checkpoint is set
-        if since and filing_date_str:
-            try:
-                fd = datetime.strptime(filing_date_str[:10], "%Y-%m-%d")
-                if fd < since:
-                    break  # Filings are returned newest-first
-            except ValueError:
-                pass
+        filing_date_str = str(filing.filing_date) if hasattr(filing, "filing_date") else None
 
         SEC_LIMITER.wait()
         try:
             form4 = filing.obj()
         except Exception as e:
-            log_warning(f"Could not parse filing {filing.accession_no}: {e}", job="fetch_form4")
+            log_warning(f"Could not parse filing {filing.accession_number}: {e}", job="fetch_form4")
             skipped += 1
             continue
 
