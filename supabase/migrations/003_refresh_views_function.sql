@@ -1,0 +1,10 @@
+CREATE OR REPLACE FUNCTION refresh_materialized_views()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW CONCURRENTLY ticker_activity_summary;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY politician_summary;
+END;
+$$;
