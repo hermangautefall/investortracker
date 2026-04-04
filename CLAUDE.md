@@ -136,6 +136,30 @@ investortracker/
 
 ---
 
+## Current pipeline status
+
+| Table | Count | Status |
+|---|---|---|
+| `insider_trades` | ~784+ | **WORKING** – grows daily |
+| `insiders` | ~372+ | **WORKING** |
+| `congress_trades` | 0 | **EMPTY** – FMP paid tier required |
+| `politicians` | 0 | **EMPTY** – depends on congress_trades |
+| `stock_prices` | 0 | **EMPTY** – enriched after insider_trades populate |
+| `ticker_activity_summary` | ~214 | **WORKING** |
+| `politician_summary` | 0 | **EMPTY** – depends on congress_trades |
+
+### Critical implementation notes (hard-won fixes)
+
+- **edgartools v5 API**: use `form4.to_dataframe()` — not `form4.transactions` (removed in v5)
+- **Form 4 dedup_key** includes: `cik + accession_no + insider_name + ticker + trade_date + shares + trade_type`
+- **Group filings**: multiple CIKs share one `accession_no` — skip duplicates in scraper with `seen_accessions` set
+- **pandas NaN**: must convert `float('nan')` → `None` before JSON/DB insert
+- **Intra-batch dedup**: deduplicate by `dedup_key` in loader before batching; use `ignore_duplicates=True` on upsert
+- **`refresh_materialized_views()`**: RPC function exists in DB (migration 003) — do not use `exec_sql`
+- **edgartools param**: `get_filings(form="4", filing_date="YYYY-MM-DD")` — not `date=`
+
+---
+
 ## Data source status
 
 | Source | Status | Notes |
@@ -268,4 +292,4 @@ populated yet. Do not delete or modify them.
 ---
 
 *Keep this file updated as the project evolves.*
-*Last updated: 2026-04-04*
+*Last updated: 2026-04-04 – pipeline working, 784 insider trades loaded*
