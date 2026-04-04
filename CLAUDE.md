@@ -133,6 +133,9 @@ investortracker/
 - `/api/v1/health` has `export const revalidate = 0` (never cached)
 - Error responses: `{ "error": "message" }` with appropriate HTTP status
 - Never return more than 100 rows per page (cap per_page to MAX_PAGE_SIZE)
+- Rate limiting lives in `src/proxy.ts` (not `middleware.ts`). Next.js 16 uses
+  `proxy.ts` as the middleware entry point — `middleware.ts` was already
+  occupied by the Nextbase Lite boilerplate. Do not create `src/middleware.ts`.
 
 ---
 
@@ -292,4 +295,4 @@ populated yet. Do not delete or modify them.
 ---
 
 *Keep this file updated as the project evolves.*
-*Last updated: 2026-04-04 – pipeline working, 784 insider trades loaded*
+*Last updated: 2026-04-04 – all /api/v1 routes implemented, rate limiting in proxy.ts*
