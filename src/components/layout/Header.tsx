@@ -6,8 +6,9 @@ import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 
 const NAV_LINKS = [
-  { href: '/insiders', label: 'Insiders' },
+  { href: '/insiders', label: 'Insider Trades' },
   { href: '/politicians', label: 'Politicians' },
+  { href: '/grand-portfolio', label: 'Grand Portfolio' },
   { href: null, label: 'Super Investors', disabled: true },
 ]
 

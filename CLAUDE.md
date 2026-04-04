@@ -295,4 +295,13 @@ populated yet. Do not delete or modify them.
 ---
 
 *Keep this file updated as the project evolves.*
-*Last updated: 2026-04-04 – all /api/v1 routes implemented, rate limiting in proxy.ts*
+## Future enhancements (do not implement yet)
+
+- **52-week high/low**: `stock_prices` currently only stores `close_price`.
+  Adding 52-week high/low requires fetching yfinance fields `"52WeekHigh"` and
+  `"52WeekLow"` (available via `yf.Ticker(t).fast_info`). Requires a schema
+  migration to add `high_52w` and `low_52w` columns to `stock_prices`.
+
+---
+
+*Last updated: 2026-04-05 – grand portfolio, homepage content, legal pages added*
