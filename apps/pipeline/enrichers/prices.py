@@ -15,15 +15,21 @@ def _fetch_price_yfinance(ticker: str, trade_date: date) -> float | None:
     """Fetch closing price for a ticker on a specific date using yfinance."""
     YFINANCE_LIMITER.wait()
     try:
+        import pandas as pd
         start = trade_date.isoformat()
         # Fetch a 5-day window to handle weekends/holidays
-        import pandas as pd
         end = (pd.Timestamp(start) + pd.Timedelta(days=5)).strftime("%Y-%m-%d")
         df = yf.download(ticker, start=start, end=end, progress=False, auto_adjust=True)
         if df.empty:
             return None
-        close = df["Close"].iloc[0]
-        return float(close) if close is not None else None
+        # yfinance >= 0.2 returns MultiIndex columns — flatten to (metric, ticker)
+        close_col = df["Close"]
+        if isinstance(close_col, pd.DataFrame):
+            # MultiIndex: pick first column (the ticker)
+            val = close_col.iloc[0, 0]
+        else:
+            val = close_col.iloc[0]
+        return float(val) if val is not None else None
     except Exception as e:
         log_warning(f"yfinance failed for {ticker} on {trade_date}: {e}")
         return None
