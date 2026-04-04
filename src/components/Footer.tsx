@@ -9,7 +9,7 @@ const Footer = () => {
         <Separator className="mb-6" />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <T.Small className="text-muted-foreground">
-            © {new Date().getFullYear()} InvestorTracker. All Rights Reserved.
+            © {new Date().getFullYear()} [SITE NAME]. All Rights Reserved.
           </T.Small>
           <nav className="flex items-center gap-4">
             <Link
