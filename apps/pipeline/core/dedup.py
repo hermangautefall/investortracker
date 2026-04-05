@@ -35,10 +35,15 @@ def make_form4_key(row: dict) -> str:
 
 
 def make_holding_key(row: dict) -> str:
-    """Stable dedup key for 13F portfolio holdings (Phase 2)."""
+    """
+    Stable dedup key for 13F portfolio holdings.
+    Uses ticker when available; falls back to company_name for CUSIP-only rows.
+    cik + quarter + (ticker or company_name) ensures one row per position per quarter.
+    """
+    identifier = str(row.get("ticker") or row.get("company_name") or "")
     parts = [
         str(row.get("cik", "") or ""),
-        str(row.get("ticker", "") or ""),
+        identifier,
         str(row.get("quarter", "") or ""),
     ]
     return hashlib.md5("|".join(parts).encode()).hexdigest()
