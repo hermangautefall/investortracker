@@ -73,3 +73,42 @@ class InsiderTrade(BaseModel):
     def clean_ticker(cls, v: str) -> str:
         """Normalize ticker to uppercase."""
         return v.upper().strip()
+
+
+class PortfolioHolding(BaseModel):
+    cik: str
+    ticker: str | None = None
+    company_name: str | None = None
+    shares: int | None = None
+    value_usd: float | None = None
+    portfolio_weight: float | None = None
+    quarter: str
+    filing_date: date | None = None
+    source: str = "sec_13f"
+
+    @field_validator("ticker", mode="before")
+    @classmethod
+    def clean_ticker(cls, v: str | None) -> str | None:
+        if not v or str(v).strip() in ("--", "", "N/A"):
+            return None
+        return str(v).upper().strip()
+
+    @field_validator("shares", mode="before")
+    @classmethod
+    def coerce_shares(cls, v) -> int | None:
+        if v is None:
+            return None
+        try:
+            return int(float(v))
+        except (TypeError, ValueError):
+            return None
+
+    @field_validator("value_usd", "portfolio_weight", mode="before")
+    @classmethod
+    def coerce_float(cls, v) -> float | None:
+        if v is None:
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None

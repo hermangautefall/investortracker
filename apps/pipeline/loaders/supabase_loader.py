@@ -1,7 +1,7 @@
 from core.db import get_client
-from core.dedup import make_congress_key, make_form4_key
+from core.dedup import make_congress_key, make_form4_key, make_holding_key
 from core.logger import log, log_error
-from core.validator import CongressTrade, InsiderTrade
+from core.validator import CongressTrade, InsiderTrade, PortfolioHolding
 
 BATCH_SIZE = 100
 
@@ -117,6 +117,61 @@ def load_insider_trades(
         batch = rows[i:i + BATCH_SIZE]
         try:
             client.table("insider_trades").upsert(
+                batch, on_conflict="dedup_key", ignore_duplicates=True
+            ).execute()
+            inserted += len(batch)
+            log(f"Batch {i // BATCH_SIZE + 1}: inserted {len(batch)} rows", job=job)
+        except Exception as e:
+            log_error(f"Batch {i // BATCH_SIZE + 1} failed: {e}", job=job)
+            skipped += len(batch)
+
+    return inserted, skipped
+
+
+def load_portfolio_holdings(
+    holdings: list[PortfolioHolding],
+    superinvestor_id: str,
+    job: str = "fetch_13f",
+) -> tuple[int, int]:
+    """
+    Upsert 13F portfolio holdings in batches of BATCH_SIZE.
+    Returns (rows_inserted, rows_skipped).
+    """
+    client = get_client()
+    inserted = 0
+    skipped = 0
+
+    seen_keys: set[str] = set()
+    rows = []
+    for holding in holdings:
+        dedup_key = make_holding_key({
+            "cik": holding.cik,
+            "ticker": holding.ticker or "",
+            "quarter": holding.quarter,
+        })
+
+        if dedup_key in seen_keys:
+            skipped += 1
+            continue
+        seen_keys.add(dedup_key)
+
+        rows.append({
+            "dedup_key": dedup_key,
+            "superinvestor_id": superinvestor_id,
+            "ticker": holding.ticker,
+            "company_name": holding.company_name,
+            "shares": holding.shares,
+            "value_usd": holding.value_usd,
+            "portfolio_weight": holding.portfolio_weight,
+            "quarter": holding.quarter,
+            "filing_date": str(holding.filing_date) if holding.filing_date else None,
+            "source": holding.source,
+        })
+
+    for i in range(0, len(rows), BATCH_SIZE):
+        batch = rows[i:i + BATCH_SIZE]
+        try:
+            client.table("portfolio_holdings").upsert(
                 batch, on_conflict="dedup_key", ignore_duplicates=True
             ).execute()
             inserted += len(batch)
