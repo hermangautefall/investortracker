@@ -6,7 +6,8 @@ const COLUMNS = [
     heading: 'Product',
     links: [
       { href: '/insiders', label: 'Insider Trades' },
-      { href: '/politicians', label: 'Politicians' },
+      /* HIDDEN: congress data pending FMP activation */
+      // { href: '/politicians', label: 'Politicians' },
       { href: '/grand-portfolio', label: 'Grand Portfolio' },
     ],
   },

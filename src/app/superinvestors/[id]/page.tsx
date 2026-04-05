@@ -339,7 +339,7 @@ export default async function SuperInvestorProfilePage({
         href="/superinvestors"
         className="inline-flex items-center gap-1 text-sm text-white/40 hover:text-white/70 transition-colors mb-6"
       >
-        <ChevronLeft size={14} /> Super Investors
+        <ChevronLeft size={14} /> Superinvestors
       </Link>
 
       {/* Header */}

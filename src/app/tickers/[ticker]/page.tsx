@@ -323,7 +323,7 @@ export default async function TickerActivityPage({
         <div className="mt-10">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-white">
-              Super Investor Holdings
+              Superinvestor Holdings
               <span className="ml-2 text-xs text-white/30 font-normal">
                 {superinvestorHoldings.length} investors
               </span>

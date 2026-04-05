@@ -92,7 +92,7 @@ export default async function SuperInvestorConsensusPage({
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Super Investor Consensus</h1>
+        <h1 className="text-2xl font-bold text-white">Superinvestor Consensus</h1>
         <p className="mt-1 text-sm text-white/50">
           Stocks held by the most tracked legendary investors — latest 13F filings
         </p>
