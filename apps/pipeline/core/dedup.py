@@ -37,10 +37,10 @@ def make_form4_key(row: dict) -> str:
 def make_holding_key(row: dict) -> str:
     """
     Stable dedup key for 13F portfolio holdings.
-    Uses ticker when available; falls back to company_name for CUSIP-only rows.
-    cik + quarter + (ticker or company_name) ensures one row per position per quarter.
+    CUSIP is the most reliable identifier (always present in 13F).
+    Falls back to ticker, then company_name for edge cases.
     """
-    identifier = str(row.get("ticker") or row.get("company_name") or "")
+    identifier = str(row.get("cusip") or row.get("ticker") or row.get("company_name") or "")
     parts = [
         str(row.get("cik", "") or ""),
         identifier,

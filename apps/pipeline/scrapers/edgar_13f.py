@@ -57,14 +57,26 @@ def fetch_13f_for_investor(cik: str, since: datetime | None = None) -> list[dict
                 period = str(filing.period_of_report or "")
                 quarter = _date_to_quarter(period)
 
+                # Calculate total portfolio value for weight computation
+                total_value = holdings_df["Value"].sum() if "Value" in holdings_df.columns else 0
+
                 for _, row in holdings_df.iterrows():
+                    value = _safe(row.get("Value"))
+                    weight = None
+                    if value and total_value:
+                        try:
+                            weight = round(float(value) / float(total_value) * 100, 4)
+                        except (TypeError, ValueError):
+                            pass
+
                     results.append({
                         "cik": cik,
-                        "ticker": _safe(row.get("ticker")),
-                        "company_name": _safe(row.get("name")),
-                        "shares": _safe(row.get("shares")),
-                        "value_usd": _safe(row.get("value")),
-                        "portfolio_weight": _safe(row.get("portfolio_percent")),
+                        "cusip": _safe(row.get("Cusip")),
+                        "ticker": _safe(row.get("Ticker")) or None,
+                        "company_name": _safe(row.get("Issuer")),
+                        "shares": _safe(row.get("SharesPrnAmount")),
+                        "value_usd": value,
+                        "portfolio_weight": weight,
                         "quarter": quarter,
                         "filing_date": str(filing.filing_date or ""),
                         "source": "sec_13f",
