@@ -1,11 +1,26 @@
 import Link from 'next/link'
 import { getAdminClient } from '@/lib/supabase-admin'
-import { formatValue, formatDate } from '@/lib/formatters'
+import { formatDate } from '@/lib/formatters'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export const revalidate = 300
 
 const PAGE_SIZE = 50
+
+// ─── View config ─────────────────────────────────────────────────────────────
+
+const VALID_VIEWS = ['all', 'qtr-buys', '6m-buys', 'qtr-sells', '6m-sells'] as const
+type ViewId = (typeof VALID_VIEWS)[number]
+
+const VIEW_META: Record<ViewId, { label: string; period: string | null; isSell: boolean }> = {
+  'all':       { label: 'All Holdings', period: null,             isSell: false },
+  'qtr-buys':  { label: 'Qtr Buys',    period: 'Last 90 days',  isSell: false },
+  '6m-buys':   { label: '6M Buys',     period: 'Last 180 days', isSell: false },
+  'qtr-sells': { label: 'Qtr Sells',   period: 'Last 90 days',  isSell: true  },
+  '6m-sells':  { label: '6M Sells',    period: 'Last 180 days', isSell: true  },
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type PortfolioRow = {
   ticker: string
@@ -28,46 +43,59 @@ type TradeRow = {
   trade_date: string | null
 }
 
-async function getPortfolioData(minOwners: number, page: number) {
-  const supabase = getAdminClient()
+// ─── Data fetching ────────────────────────────────────────────────────────────
 
-  const { data: trades, error } = await supabase
+function getCutoffDate(days: number) {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  return d.toISOString().slice(0, 10)
+}
+
+function viewFilter(view: ViewId): { tradeType?: string; cutoffDays?: number } {
+  switch (view) {
+    case 'qtr-buys':  return { tradeType: 'buy',  cutoffDays: 90 }
+    case '6m-buys':   return { tradeType: 'buy',  cutoffDays: 180 }
+    case 'qtr-sells': return { tradeType: 'sell', cutoffDays: 90 }
+    case '6m-sells':  return { tradeType: 'sell', cutoffDays: 180 }
+    default:          return {}
+  }
+}
+
+async function getPortfolioData(view: ViewId, minOwners: number, page: number) {
+  const supabase = getAdminClient()
+  const filter = viewFilter(view)
+
+  let query = supabase
     .from('insider_trades')
     .select('ticker, company_name, insider_id, trade_type, total_value, trade_date')
     .not('ticker', 'is', null)
     .neq('ticker', '')
 
+  if (filter.tradeType) query = query.eq('trade_type', filter.tradeType)
+  if (filter.cutoffDays) query = query.gte('trade_date', getCutoffDate(filter.cutoffDays))
+
+  const { data: trades, error } = await query
   if (error || !trades) return { rows: [], total: 0, totalInsiders: 0, totalTickers: 0, error }
 
-  // Aggregate
-  const map = new Map<
-    string,
-    {
-      ticker: string
-      company_name: string | null
-      insiderIds: Set<string>
-      total_trades: number
-      buy_count: number
-      sell_count: number
-      last_trade_date: string | null
-      total_buy_volume: number
-    }
-  >()
-
+  const map = new Map<string, {
+    ticker: string
+    company_name: string | null
+    insiderIds: Set<string>
+    total_trades: number
+    buy_count: number
+    sell_count: number
+    last_trade_date: string | null
+    total_buy_volume: number
+  }>()
   const allInsiders = new Set<string>()
 
   for (const row of trades as TradeRow[]) {
     const ticker = row.ticker
     if (!map.has(ticker)) {
       map.set(ticker, {
-        ticker,
-        company_name: null,
-        insiderIds: new Set(),
-        total_trades: 0,
-        buy_count: 0,
-        sell_count: 0,
-        last_trade_date: null,
-        total_buy_volume: 0,
+        ticker, company_name: null, insiderIds: new Set(),
+        total_trades: 0, buy_count: 0, sell_count: 0,
+        last_trade_date: null, total_buy_volume: 0,
       })
     }
     const e = map.get(ticker)!
@@ -98,7 +126,6 @@ async function getPortfolioData(minOwners: number, page: number) {
   const from = (page - 1) * PAGE_SIZE
   const paginated = sorted.slice(from, from + PAGE_SIZE)
 
-  // Fetch prices for this page
   const tickers = paginated.map((r) => r.ticker)
   const priceMap = new Map<string, number | null>()
   if (tickers.length > 0) {
@@ -127,6 +154,8 @@ async function getPortfolioData(minOwners: number, page: number) {
   return { rows, total, totalInsiders, totalTickers, error: null }
 }
 
+// ─── Config ───────────────────────────────────────────────────────────────────
+
 const MIN_OWNER_OPTIONS = [
   { value: '1', label: 'Min. 1 insider' },
   { value: '2', label: '2+ insiders' },
@@ -135,22 +164,33 @@ const MIN_OWNER_OPTIONS = [
   { value: '10', label: '10+ insiders' },
 ]
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function GrandPortfolioPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const sp = await searchParams
+  const rawView = typeof sp.view === 'string' ? sp.view : 'all'
+  const view: ViewId = (VALID_VIEWS as readonly string[]).includes(rawView)
+    ? (rawView as ViewId)
+    : 'all'
   const minOwners = Math.max(1, parseInt(typeof sp.min_owners === 'string' ? sp.min_owners : '1', 10))
   const page = Math.max(1, parseInt(typeof sp.page === 'string' ? sp.page : '1', 10))
 
-  const { rows, total, totalInsiders, totalTickers, error } = await getPortfolioData(minOwners, page)
+  const { rows, total, totalInsiders, totalTickers, error } = await getPortfolioData(view, minOwners, page)
   const totalPages = Math.ceil(total / PAGE_SIZE)
+  const meta = VIEW_META[view]
 
-  function pageUrl(p: number) {
+  function buildUrl(overrides: { view?: string; min_owners?: string; page?: number }) {
     const params = new URLSearchParams()
-    if (minOwners > 1) params.set('min_owners', String(minOwners))
-    if (p > 1) params.set('page', String(p))
+    const v = overrides.view ?? view
+    const mo = overrides.min_owners ?? (minOwners > 1 ? String(minOwners) : undefined)
+    const pg = overrides.page ?? 1
+    if (v !== 'all') params.set('view', v)
+    if (mo && mo !== '1') params.set('min_owners', mo)
+    if (pg > 1) params.set('page', String(pg))
     const qs = params.toString()
     return `/grand-portfolio${qs ? `?${qs}` : ''}`
   }
@@ -167,18 +207,57 @@ export default async function GrandPortfolioPage({
         </p>
       </div>
 
-      {/* Filter bar + stats */}
+      {/* Tab strip */}
+      <div className="mb-5 border-b border-white/8">
+        <nav className="flex gap-0 -mb-px flex-wrap">
+          {(VALID_VIEWS as readonly ViewId[]).map((v) => {
+            const active = v === view
+            return (
+              <Link
+                key={v}
+                href={buildUrl({ view: v, page: 1 })}
+                className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  active
+                    ? 'border-white text-white'
+                    : 'border-transparent text-white/40 hover:text-white/70 hover:border-white/30'
+                }`}
+              >
+                {VIEW_META[v].label}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* Stats row + filter */}
       <div className="mb-6 flex flex-wrap items-center gap-4 justify-between">
+        <div className="flex items-center gap-4 text-xs text-white/40">
+          <span>
+            <span className="text-white/70 font-medium">{totalTickers.toLocaleString('en-US')}</span>{' '}
+            {total !== totalTickers ? 'matching' : 'stocks'}
+          </span>
+          <span className="text-white/20">|</span>
+          <span>
+            <span className="text-white/70 font-medium">{totalInsiders.toLocaleString('en-US')}</span> insiders tracked
+          </span>
+          {meta.period && (
+            <>
+              <span className="text-white/20">|</span>
+              <span>Period: <span className="text-white/70 font-medium">{meta.period}</span></span>
+            </>
+          )}
+        </div>
+
+        {/* Min owners filter — keeps current view */}
         <form method="GET" action="/grand-portfolio" className="flex items-center gap-2">
+          {view !== 'all' && <input type="hidden" name="view" value={view} />}
           <select
             name="min_owners"
             defaultValue={String(minOwners)}
             className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/80 focus:outline-none focus:ring-1 focus:ring-white/20 hover:border-white/20 transition-colors cursor-pointer"
           >
             {MIN_OWNER_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
           <button
@@ -188,24 +267,6 @@ export default async function GrandPortfolioPage({
             Go
           </button>
         </form>
-
-        <div className="flex items-center gap-4 text-xs text-white/40">
-          <span>
-            <span className="text-white/70 font-medium">{totalTickers.toLocaleString('en-US')}</span> stocks
-          </span>
-          <span className="text-white/20">|</span>
-          <span>
-            <span className="text-white/70 font-medium">{totalInsiders.toLocaleString('en-US')}</span> insiders tracked
-          </span>
-          {total !== totalTickers && (
-            <>
-              <span className="text-white/20">|</span>
-              <span>
-                <span className="text-white/70 font-medium">{total.toLocaleString('en-US')}</span> matching filter
-              </span>
-            </>
-          )}
-        </div>
       </div>
 
       {/* Error */}
@@ -235,15 +296,20 @@ export default async function GrandPortfolioPage({
                   <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Owners</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Trades</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Price</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-white/40 uppercase tracking-wide w-24">Bias</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Last Trade</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-white/40 uppercase tracking-wide w-24">
+                    {meta.isSell ? 'Activity' : 'Bias'}
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">
+                    Last Trade
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {rows.map((row, i) => {
                   const rank = globalRankOffset + i + 1
-                  const buyBias = row.buy_count > row.sell_count
-                  const sellBias = row.sell_count > row.buy_count
+                  // For sell views, all trades are sells → show red indicator
+                  const showSellBias = meta.isSell || row.sell_count > row.buy_count
+                  const showBuyBias = !meta.isSell && row.buy_count > row.sell_count
                   return (
                     <tr key={row.ticker} className="hover:bg-white/3 transition-colors">
                       <td className="px-4 py-3 text-white/30 tabular-nums text-xs">{rank}</td>
@@ -268,11 +334,11 @@ export default async function GrandPortfolioPage({
                         {row.close_price != null ? `$${row.close_price.toFixed(2)}` : '–'}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {buyBias ? (
+                        {showBuyBias ? (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-green-400">
                             ▲ <span className="hidden sm:inline">Buy bias</span>
                           </span>
-                        ) : sellBias ? (
+                        ) : showSellBias ? (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-red-400">
                             ▼ <span className="hidden sm:inline">Sell bias</span>
                           </span>
@@ -295,7 +361,7 @@ export default async function GrandPortfolioPage({
             <div className="mt-6 flex items-center justify-center gap-4">
               {page > 1 ? (
                 <Link
-                  href={pageUrl(page - 1)}
+                  href={buildUrl({ page: page - 1 })}
                   className="inline-flex items-center gap-1 px-4 py-2 rounded-md border border-white/10 text-sm text-white/60 hover:text-white hover:border-white/20 transition-colors"
                 >
                   <ChevronLeft size={14} /> Previous
@@ -310,7 +376,7 @@ export default async function GrandPortfolioPage({
               </span>
               {page < totalPages ? (
                 <Link
-                  href={pageUrl(page + 1)}
+                  href={buildUrl({ page: page + 1 })}
                   className="inline-flex items-center gap-1 px-4 py-2 rounded-md border border-white/10 text-sm text-white/60 hover:text-white hover:border-white/20 transition-colors"
                 >
                   Next <ChevronRight size={14} />

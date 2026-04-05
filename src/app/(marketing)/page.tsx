@@ -2,9 +2,38 @@ import Link from 'next/link'
 import { getAdminClient } from '@/lib/supabase-admin'
 import { formatDate, formatValue } from '@/lib/formatters'
 import { TradeBadge } from '@/components/badges/TradeBadge'
-import { ExternalLink } from 'lucide-react'
 
 export const revalidate = 300
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type TradeRow = {
+  ticker: string
+  company_name: string | null
+  insider_id: string | null
+  trade_type: string | null
+  total_value: number | null
+  trade_date: string | null
+}
+
+type TopRow = {
+  rank: number
+  ticker: string
+  company_name: string | null
+  ownership_count: number
+  buyBias: boolean
+  sellBias: boolean
+  close_price: number | null
+}
+
+type RecentTrade = {
+  id: string
+  ticker: string | null
+  trade_type: string | null
+  total_value: number | null
+  trade_date: string | null
+  insiders: { id: string; name: string | null } | null
+}
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
@@ -28,22 +57,22 @@ async function getStats() {
   }
 }
 
-type TradeRow = {
-  ticker: string
-  company_name: string | null
-  insider_id: string | null
-  trade_type: string | null
-  total_value: number | null
-  trade_date: string | null
-}
-
-async function getTopHeld() {
+async function getTopHeld(homeView: 'buys' | 'sells'): Promise<TopRow[]> {
   const supabase = getAdminClient()
+
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 90)
+  const cutoffStr = cutoff.toISOString().slice(0, 10)
+
+  const tradeType = homeView === 'buys' ? 'buy' : 'sell'
+
   const { data: trades } = await supabase
     .from('insider_trades')
     .select('ticker, company_name, insider_id, trade_type, total_value, trade_date')
     .not('ticker', 'is', null)
     .neq('ticker', '')
+    .eq('trade_type', tradeType)
+    .gte('trade_date', cutoffStr)
 
   if (!trades) return []
 
@@ -59,7 +88,6 @@ async function getTopHeld() {
     else if (t === 'sell') e.sells++
   }
 
-  // Fetch prices for top tickers
   const sorted = Array.from(map.entries())
     .sort((a, b) => b[1].insiderIds.size - a[1].insiderIds.size)
     .slice(0, 10)
@@ -88,16 +116,7 @@ async function getTopHeld() {
   }))
 }
 
-type RecentTrade = {
-  id: string
-  ticker: string | null
-  trade_type: string | null
-  total_value: number | null
-  trade_date: string | null
-  insiders: { id: string; name: string | null } | null
-}
-
-async function getRecentTrades() {
+async function getRecentTrades(): Promise<RecentTrade[]> {
   const supabase = getAdminClient()
   const { data } = await supabase
     .from('insider_trades')
@@ -109,12 +128,22 @@ async function getRecentTrades() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const sp = await searchParams
+  const rawView = typeof sp.home_view === 'string' ? sp.home_view : 'buys'
+  const homeView: 'buys' | 'sells' = rawView === 'sells' ? 'sells' : 'buys'
+
   const [stats, topHeld, recentTrades] = await Promise.all([
     getStats(),
-    getTopHeld(),
+    getTopHeld(homeView),
     getRecentTrades(),
   ])
+
+  const portfolioView = homeView === 'buys' ? 'qtr-buys' : 'qtr-sells'
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
@@ -171,20 +200,43 @@ export default async function HomePage() {
       {/* Two-column sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
-        {/* Most Held Stocks */}
+        {/* Most Held Stocks with tab switcher */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-white">Most Held Stocks</h2>
+          <div className="flex items-center justify-between mb-3">
+            {/* Tab switcher */}
+            <div className="flex items-center gap-1 rounded-md border border-white/10 bg-white/3 p-0.5">
+              <Link
+                href="/?home_view=buys"
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  homeView === 'buys'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                Top Buys – Qtr
+              </Link>
+              <Link
+                href="/?home_view=sells"
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  homeView === 'sells'
+                    ? 'bg-red-500/20 text-red-400'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                Top Sells – Qtr
+              </Link>
+            </div>
             <Link
-              href="/grand-portfolio"
+              href={`/grand-portfolio?view=${portfolioView}`}
               className="text-xs text-white/40 hover:text-white/70 transition-colors"
             >
-              View full portfolio →
+              View full →
             </Link>
           </div>
+
           {topHeld.length === 0 ? (
             <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
-              <p className="text-sm text-white/30">No data yet.</p>
+              <p className="text-sm text-white/30">No data for this period yet.</p>
             </div>
           ) : (
             <div className="rounded-xl border border-white/8 overflow-hidden">
@@ -221,7 +273,9 @@ export default async function HomePage() {
                         {row.close_price != null ? `$${row.close_price.toFixed(2)}` : '–'}
                       </td>
                       <td className="px-3 py-2.5 text-center text-xs">
-                        {row.buyBias ? (
+                        {homeView === 'sells' ? (
+                          <span className="text-red-400">▼</span>
+                        ) : row.buyBias ? (
                           <span className="text-green-400">▲</span>
                         ) : row.sellBias ? (
                           <span className="text-red-400">▼</span>
