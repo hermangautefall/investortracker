@@ -18,7 +18,7 @@ export async function GET(
 
   const supabase = getAdminClient()
 
-  const [summaryRes, congressRes, insiderRes] = await Promise.all([
+  const [summaryRes, congressRes, insiderRes, superinvestorRes] = await Promise.all([
     supabase
       .from('ticker_activity_summary')
       .select('*')
@@ -46,11 +46,18 @@ export async function GET(
       .eq('ticker', ticker)
       .gte('trade_date', cutoffStr)
       .order('trade_date', { ascending: false }),
+
+    supabase
+      .from('superinvestor_latest_holdings')
+      .select('investor_name, fund_name, shares, value_usd, portfolio_weight, quarter')
+      .eq('ticker', ticker)
+      .order('portfolio_weight', { ascending: false }),
   ])
 
-  if (summaryRes.error) return errorResponse(summaryRes.error.message, 500)
-  if (congressRes.error) return errorResponse(congressRes.error.message, 500)
-  if (insiderRes.error)  return errorResponse(insiderRes.error.message, 500)
+  if (summaryRes.error)       return errorResponse(summaryRes.error.message, 500)
+  if (congressRes.error)      return errorResponse(congressRes.error.message, 500)
+  if (insiderRes.error)       return errorResponse(insiderRes.error.message, 500)
+  if (superinvestorRes.error) return errorResponse(superinvestorRes.error.message, 500)
 
   const summaryRows = summaryRes.data ?? []
   const congressRow = summaryRows.find((r) => r.data_type === 'congress') ?? null
@@ -75,6 +82,7 @@ export async function GET(
     },
     congressional_trades: congressRes.data ?? [],
     insider_trades: insiderRes.data ?? [],
+    superinvestor_holdings: superinvestorRes.data ?? [],
   }
 
   return successResponse(responseData, {

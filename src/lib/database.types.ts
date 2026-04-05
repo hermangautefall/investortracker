@@ -222,18 +222,24 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          primary_company: string | null
+          primary_role: string | null
         }
         Insert: {
           cik?: string | null
           created_at?: string | null
           id?: string
           name: string
+          primary_company?: string | null
+          primary_role?: string | null
         }
         Update: {
           cik?: string | null
           created_at?: string | null
           id?: string
           name?: string
+          primary_company?: string | null
+          primary_role?: string | null
         }
         Relationships: []
       }
@@ -336,7 +342,8 @@ export type Database = {
           quarter: string
           raw: Json | null
           shares: number | null
-          ticker: string
+          source: string | null
+          ticker: string | null
           value_usd: number | null
         }
         Insert: {
@@ -350,7 +357,8 @@ export type Database = {
           quarter: string
           raw?: Json | null
           shares?: number | null
-          ticker: string
+          source?: string | null
+          ticker?: string | null
           value_usd?: number | null
         }
         Update: {
@@ -364,7 +372,8 @@ export type Database = {
           quarter?: string
           raw?: Json | null
           shares?: number | null
-          ticker?: string
+          source?: string | null
+          ticker?: string | null
           value_usd?: number | null
         }
         Relationships: [
@@ -467,6 +476,39 @@ export type Database = {
           total_trades: number | null
         }
         Relationships: []
+      }
+      superinvestor_consensus: {
+        Row: {
+          avg_weight: number | null
+          company_name: string | null
+          investor_count: number | null
+          latest_quarter: string | null
+          ticker: string | null
+          total_value_usd: number | null
+        }
+        Relationships: []
+      }
+      superinvestor_latest_holdings: {
+        Row: {
+          company_name: string | null
+          fund_name: string | null
+          investor_id: string | null
+          investor_name: string | null
+          portfolio_weight: number | null
+          quarter: string | null
+          shares: number | null
+          ticker: string | null
+          value_usd: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_holdings_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "superinvestors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ticker_activity_summary: {
         Row: {
