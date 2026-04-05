@@ -48,6 +48,8 @@ class CongressTrade(BaseModel):
 class InsiderTrade(BaseModel):
     insider_name: str
     cik: str
+    primary_role: str | None = None
+    primary_company: str | None = None
     ticker: str
     company_name: str | None = None
     trade_type: Literal["buy", "sell", "option_exercise"]

@@ -20,6 +20,14 @@ type Trade = {
   form4_url: string | null
 }
 
+type InsiderProfile = {
+  id: string
+  name: string | null
+  cik: string | null
+  primary_role: string | null
+  primary_company: string | null
+}
+
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-xl border border-white/8 bg-white/3 p-5">
@@ -44,7 +52,7 @@ export default async function InsiderProfilePage({
 
   const supabase = getAdminClient()
   const [insiderRes, tradesRes] = await Promise.all([
-    supabase.from('insiders').select('id, name, cik').eq('id', id).maybeSingle(),
+    supabase.from('insiders').select('id, name, cik, primary_role, primary_company').eq('id', id).maybeSingle(),
     supabase
       .from('insider_trades')
       .select(
@@ -57,7 +65,7 @@ export default async function InsiderProfilePage({
   ])
 
   if (!insiderRes.data) notFound()
-  const insider = insiderRes.data
+  const insider = insiderRes.data as unknown as InsiderProfile
   const trades = (tradesRes.data ?? []) as Trade[]
   const total = tradesRes.count ?? 0
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -83,8 +91,14 @@ export default async function InsiderProfilePage({
       {/* Profile header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">{insider.name ?? 'Unknown Insider'}</h1>
+        {insider.primary_role && (
+          <p className="mt-1 text-sm text-white/60">
+            {insider.primary_role}
+            {insider.primary_company && ` at ${insider.primary_company}`}
+          </p>
+        )}
         {insider.cik && (
-          <p className="mt-1 text-sm text-white/40">CIK: {insider.cik}</p>
+          <p className="mt-1 text-xs text-white/30">CIK: {insider.cik}</p>
         )}
       </div>
 

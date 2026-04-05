@@ -116,6 +116,7 @@ def fetch_form4(since: datetime) -> list[dict]:
 
             # to_dataframe() combines all owners — use first name only
             insider_name = insider.split(" / ")[0].strip() if insider else "Unknown"
+            position = str(row.get("Position") or "").strip() or None
 
             if not ticker:
                 continue  # Skip rows with no ticker (derivatives without symbol)
@@ -137,6 +138,8 @@ def fetch_form4(since: datetime) -> list[dict]:
                 "insider_name": insider_name,
                 "cik": cik,
                 "accession_no": accession_no,
+                "primary_role": position,
+                "primary_company": company or None,
                 "ticker": ticker,
                 "company_name": company or None,
                 "trade_type": trade_type,

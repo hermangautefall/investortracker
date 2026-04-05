@@ -169,8 +169,13 @@ def _upsert_insider(client, trade: InsiderTrade) -> str | None:
     Upsert insider by CIK. Returns the insider's UUID.
     """
     try:
+        insider_payload: dict = {"name": trade.insider_name, "cik": trade.cik}
+        if getattr(trade, "primary_role", None):
+            insider_payload["primary_role"] = trade.primary_role
+        if getattr(trade, "primary_company", None):
+            insider_payload["primary_company"] = trade.primary_company
         result = client.table("insiders").upsert(
-            {"name": trade.insider_name, "cik": trade.cik},
+            insider_payload,
             on_conflict="cik",
             ignore_duplicates=False,
         ).execute()
