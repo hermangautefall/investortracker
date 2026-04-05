@@ -1,727 +1,495 @@
 import Link from 'next/link'
-import { getAdminClient } from '@/lib/supabase-admin'
-import { formatDate, formatValue } from '@/lib/formatters'
-import { TradeBadge } from '@/components/badges/TradeBadge'
-import { DataSourceSwitch } from '@/components/ui/DataSourceSwitch'
-import type { Source } from '@/components/ui/DataSourceSwitch'
+import { getHomepageData } from '@/lib/homepage-data'
+import { NetworkAnimation } from '@/components/marketing/NetworkAnimation'
+import { ActivityCard } from '@/components/marketing/ActivityCard'
+import type {
+  SuperinvestorTop10Row,
+  MostOwnedRow,
+  BiggestRow,
+  MostActiveInsiderRow,
+  ActivityRow,
+} from '@/lib/homepage-data'
 
 export const revalidate = 300
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Formatters ───────────────────────────────────────────────────────────────
 
-type TradeRow = {
-  ticker: string
-  company_name: string | null
-  insider_id: string | null
-  trade_type: string | null
-  total_value: number | null
-  trade_date: string | null
-}
-
-type TopInsiderRow = {
-  rank: number
-  ticker: string
-  company_name: string | null
-  count: number
-  buyBias: boolean
-  sellBias: boolean
-  close_price: number | null
-}
-
-type TopSuperRow = {
-  rank: number
-  ticker: string
-  company_name: string | null
-  count: number
-  close_price: number | null
-}
-
-type TopCombinedRow = {
-  rank: number
-  ticker: string
-  company_name: string | null
-  count: number
-  insider_count: number
-  investor_count: number
-  close_price: number | null
-}
-
-type RecentTrade = {
-  id: string
-  ticker: string | null
-  trade_type: string | null
-  total_value: number | null
-  trade_date: string | null
-  insiders: { id: string; name: string | null } | null
-}
-
-type TopSuperinvestor = {
-  id: string
-  name: string
-  fund_name: string | null
-  holdings_count: number
-  total_aum_usd: number
-}
-
-// ─── Data fetching ────────────────────────────────────────────────────────────
-
-async function getStats() {
-  const supabase = getAdminClient()
-  const [it, ct, runs] = await Promise.all([
-    supabase.from('insider_trades').select('id', { count: 'exact', head: true }),
-    supabase.from('congress_trades').select('id', { count: 'exact', head: true }),
-    supabase
-      .from('pipeline_runs')
-      .select('ran_at')
-      .eq('job_name', 'fetch_form4')
-      .eq('status', 'success')
-      .order('ran_at', { ascending: false })
-      .limit(1),
-  ])
-  return {
-    insiderCount: it.count ?? 0,
-    congressCount: ct.count ?? 0,
-    lastUpdated: runs.data?.[0]?.ran_at ?? null,
+function formatValuePlus(v: number): string {
+  if (!v || v <= 0) return '–'
+  if (v >= 1_000_000_000) {
+    const b = v / 1_000_000_000
+    return `$${b >= 10 ? Math.round(b) : b.toFixed(1)}B+`
   }
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(0)}M+`
+  if (v >= 1_000) return `$${Math.round(v / 1_000)}K+`
+  return `$${v.toLocaleString('en-US')}`
 }
 
-async function getTopInsiders(homeView: 'buys' | 'sells'): Promise<TopInsiderRow[]> {
-  const supabase = getAdminClient()
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - 90)
-  const cutoffStr = cutoff.toISOString().slice(0, 10)
-  const tradeType = homeView === 'buys' ? 'buy' : 'sell'
-
-  const { data: trades } = await supabase
-    .from('insider_trades')
-    .select('ticker, company_name, insider_id, trade_type, total_value, trade_date')
-    .not('ticker', 'is', null)
-    .neq('ticker', '')
-    .eq('trade_type', tradeType)
-    .gte('trade_date', cutoffStr)
-
-  if (!trades) return []
-
-  const map = new Map<string, { company_name: string | null; insiderIds: Set<string>; buys: number; sells: number }>()
-  for (const row of trades as TradeRow[]) {
-    const ticker = row.ticker
-    if (!map.has(ticker)) map.set(ticker, { company_name: null, insiderIds: new Set(), buys: 0, sells: 0 })
-    const e = map.get(ticker)!
-    if (row.company_name) e.company_name = row.company_name
-    if (row.insider_id) e.insiderIds.add(row.insider_id)
-    const t = (row.trade_type ?? '').toLowerCase()
-    if (t === 'buy') e.buys++
-    else if (t === 'sell') e.sells++
-  }
-
-  const sorted = Array.from(map.entries())
-    .sort((a, b) => b[1].insiderIds.size - a[1].insiderIds.size)
-    .slice(0, 10)
-
-  const tickers = sorted.map(([t]) => t)
-  const priceMap = new Map<string, number>()
-  if (tickers.length > 0) {
-    const { data: prices } = await supabase
-      .from('stock_prices')
-      .select('ticker, close_price, date')
-      .in('ticker', tickers)
-      .order('date', { ascending: false })
-    for (const p of prices ?? []) {
-      if (!priceMap.has(p.ticker) && p.close_price != null) priceMap.set(p.ticker, p.close_price)
-    }
-  }
-
-  return sorted.map(([ticker, v], i) => ({
-    rank: i + 1,
-    ticker,
-    company_name: v.company_name,
-    count: v.insiderIds.size,
-    buyBias: v.buys > v.sells,
-    sellBias: v.sells > v.buys,
-    close_price: priceMap.get(ticker) ?? null,
-  }))
+function formatFilingDate(dateStr: string | null): string {
+  if (!dateStr) return '–'
+  const d = new Date(dateStr.length === 10 ? `${dateStr}T12:00:00Z` : dateStr)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`
 }
 
-async function getTopSuperinvestorStocks(): Promise<TopSuperRow[]> {
-  const supabase = getAdminClient()
-  const { data: qData } = await supabase
-    .from('portfolio_holdings')
-    .select('quarter')
-    .not('ticker', 'is', null)
-    .order('quarter', { ascending: false })
-    .limit(1)
-  const latestQ = qData?.[0]?.quarter ?? null
-  if (!latestQ) return []
+// ─── Static card components (server-rendered) ─────────────────────────────────
 
-  const { data: holdings } = await supabase
-    .from('portfolio_holdings')
-    .select('ticker, company_name, investor_id')
-    .eq('quarter', latestQ)
-    .not('ticker', 'is', null)
-
-  if (!holdings) return []
-
-  const map = new Map<string, { company_name: string | null; investorIds: Set<string> }>()
-  for (const h of holdings) {
-    const ticker = h.ticker as string
-    if (!map.has(ticker)) map.set(ticker, { company_name: null, investorIds: new Set() })
-    const e = map.get(ticker)!
-    if (h.company_name) e.company_name = h.company_name
-    if (h.investor_id) e.investorIds.add(h.investor_id)
-  }
-
-  const sorted = Array.from(map.entries())
-    .sort((a, b) => b[1].investorIds.size - a[1].investorIds.size)
-    .slice(0, 10)
-
-  const tickers = sorted.map(([t]) => t)
-  const priceMap = new Map<string, number>()
-  if (tickers.length > 0) {
-    const { data: prices } = await supabase
-      .from('stock_prices')
-      .select('ticker, close_price, date')
-      .in('ticker', tickers)
-      .order('date', { ascending: false })
-    for (const p of prices ?? []) {
-      if (!priceMap.has(p.ticker) && p.close_price != null) priceMap.set(p.ticker, p.close_price)
-    }
-  }
-
-  return sorted.map(([ticker, v], i) => ({
-    rank: i + 1,
-    ticker,
-    company_name: v.company_name,
-    count: v.investorIds.size,
-    close_price: priceMap.get(ticker) ?? null,
-  }))
+function CardShell({
+  title,
+  seeMoreHref,
+  children,
+}: {
+  title: string
+  seeMoreHref: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/3 flex flex-col overflow-hidden">
+      <div className="px-4 pt-4 pb-3 border-b border-white/5 flex items-center justify-between">
+        <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider">{title}</span>
+        <Link
+          href={seeMoreHref}
+          className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
+        >
+          see more →
+        </Link>
+      </div>
+      <div className="flex-1">{children}</div>
+    </div>
+  )
 }
 
-async function getTopCombinedStocks(): Promise<TopCombinedRow[]> {
-  const supabase = getAdminClient()
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - 90)
-  const cutoffStr = cutoff.toISOString().slice(0, 10)
-
-  const { data: qData } = await supabase
-    .from('portfolio_holdings')
-    .select('quarter')
-    .not('ticker', 'is', null)
-    .order('quarter', { ascending: false })
-    .limit(1)
-  const latestQ = qData?.[0]?.quarter ?? null
-
-  const [insiderRes, superRes] = await Promise.all([
-    supabase
-      .from('insider_trades')
-      .select('ticker, insider_id, company_name')
-      .not('ticker', 'is', null)
-      .neq('ticker', '')
-      .gte('trade_date', cutoffStr),
-    latestQ
-      ? supabase
-          .from('portfolio_holdings')
-          .select('ticker, company_name, investor_id')
-          .eq('quarter', latestQ)
-          .not('ticker', 'is', null)
-      : Promise.resolve({ data: [] as { ticker: string | null; company_name: string | null; investor_id: string | null }[] }),
-  ])
-
-  const insiderMap = new Map<string, { company_name: string | null; ids: Set<string> }>()
-  for (const row of insiderRes.data ?? []) {
-    const ticker = row.ticker as string
-    if (!insiderMap.has(ticker)) insiderMap.set(ticker, { company_name: null, ids: new Set() })
-    const e = insiderMap.get(ticker)!
-    if (row.company_name) e.company_name = row.company_name
-    if (row.insider_id) e.ids.add(row.insider_id)
-  }
-
-  const superMap = new Map<string, { company_name: string | null; ids: Set<string> }>()
-  for (const h of superRes.data ?? []) {
-    const ticker = h.ticker as string
-    if (!superMap.has(ticker)) superMap.set(ticker, { company_name: null, ids: new Set() })
-    const e = superMap.get(ticker)!
-    if (h.company_name) e.company_name = h.company_name
-    if (h.investor_id) e.ids.add(h.investor_id)
-  }
-
-  const allTickersArr = Array.from(new Set([...Array.from(insiderMap.keys()), ...Array.from(superMap.keys())]))
-  const merged: { ticker: string; company_name: string | null; insider_count: number; investor_count: number; total: number }[] = []
-
-  for (const ticker of allTickersArr) {
-    const insiderCount = insiderMap.get(ticker)?.ids.size ?? 0
-    const investorCount = superMap.get(ticker)?.ids.size ?? 0
-    merged.push({
-      ticker,
-      company_name: superMap.get(ticker)?.company_name ?? insiderMap.get(ticker)?.company_name ?? null,
-      insider_count: insiderCount,
-      investor_count: investorCount,
-      total: insiderCount + investorCount,
-    })
-  }
-
-  const sorted = merged.sort((a, b) => b.total - a.total).slice(0, 10)
-
-  const tickers = sorted.map((r) => r.ticker)
-  const priceMap = new Map<string, number>()
-  if (tickers.length > 0) {
-    const { data: prices } = await supabase
-      .from('stock_prices')
-      .select('ticker, close_price, date')
-      .in('ticker', tickers)
-      .order('date', { ascending: false })
-    for (const p of prices ?? []) {
-      if (!priceMap.has(p.ticker) && p.close_price != null) priceMap.set(p.ticker, p.close_price)
-    }
-  }
-
-  return sorted.map((r, i) => ({
-    rank: i + 1,
-    ticker: r.ticker,
-    company_name: r.company_name,
-    count: r.total,
-    insider_count: r.insider_count,
-    investor_count: r.investor_count,
-    close_price: priceMap.get(r.ticker) ?? null,
-  }))
+function EmptyCardRow() {
+  return (
+    <div className="px-4 py-8 text-center text-xs text-white/25">No data yet</div>
+  )
 }
 
-async function getTopSuperinvestors(): Promise<TopSuperinvestor[]> {
-  const supabase = getAdminClient()
-  const [investorsRes, holdingsRes] = await Promise.all([
-    supabase.from('superinvestors').select('id, name, fund_name'),
-    supabase.from('portfolio_holdings').select('investor_id, ticker, value_usd'),
-  ])
-  if (!investorsRes.data) return []
-
-  const summaryMap = new Map<string, { tickers: Set<string>; aum: number }>()
-  for (const h of holdingsRes.data ?? []) {
-    if (!h.investor_id) continue
-    if (!summaryMap.has(h.investor_id))
-      summaryMap.set(h.investor_id, { tickers: new Set(), aum: 0 })
-    const s = summaryMap.get(h.investor_id)!
-    if (h.ticker) s.tickers.add(h.ticker)
-    s.aum += h.value_usd ?? 0
-  }
-
-  return investorsRes.data
-    .map((si) => {
-      const s = summaryMap.get(si.id)
-      return {
-        id: si.id,
-        name: si.name,
-        fund_name: si.fund_name,
-        holdings_count: s ? s.tickers.size : 0,
-        total_aum_usd: s ? s.aum : 0,
-      }
-    })
-    .filter((si) => si.total_aum_usd > 0)
-    .sort((a, b) => b.total_aum_usd - a.total_aum_usd)
-    .slice(0, 5)
+// Ticker-based card rows
+function TickerRows({
+  rows,
+  valueLabel,
+  valueFormatter,
+  valueColor,
+}: {
+  rows: { ticker: string; company_name: string | null; value: string | number }[]
+  valueLabel: string
+  valueFormatter?: (v: number) => string
+  valueColor?: string
+}) {
+  return (
+    <table className="w-full text-xs">
+      <thead>
+        <tr className="border-b border-white/5">
+          <th className="px-4 py-2 text-left font-medium text-white/30">Ticker</th>
+          <th className="px-4 py-2 text-left font-medium text-white/30 hidden sm:table-cell">Name</th>
+          <th className="px-4 py-2 text-right font-medium text-white/30">{valueLabel}</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-white/4">
+        {rows.map((row, i) => (
+          <tr key={`${row.ticker}-${i}`} className="hover:bg-white/3 transition-colors">
+            <td className="px-4 py-2">
+              <Link
+                href={`/tickers/${row.ticker}`}
+                className="font-mono font-bold text-white hover:text-white/70 transition-colors"
+              >
+                {row.ticker}
+              </Link>
+            </td>
+            <td className="px-4 py-2 text-white/40 truncate max-w-[120px] hidden sm:table-cell">
+              {row.company_name ?? '–'}
+            </td>
+            <td className={`px-4 py-2 text-right font-semibold tabular-nums ${valueColor ?? 'text-white/70'}`}>
+              {typeof row.value === 'number' && valueFormatter ? valueFormatter(row.value) : row.value}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
-async function getRecentTrades(): Promise<RecentTrade[]> {
-  const supabase = getAdminClient()
-  const { data } = await supabase
-    .from('insider_trades')
-    .select('id, ticker, trade_type, total_value, trade_date, insiders(id, name)')
-    .order('trade_date', { ascending: false })
-    .limit(5)
-  return (data ?? []) as unknown as RecentTrade[]
+function SectionHeader({
+  title,
+  subtitle,
+  seeAllHref,
+}: {
+  title: string
+  subtitle: string
+  seeAllHref?: string
+}) {
+  return (
+    <div className="flex items-end justify-between mb-6">
+      <div>
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <p className="mt-0.5 text-sm text-white/40">{subtitle}</p>
+      </div>
+      {seeAllHref && (
+        <Link
+          href={seeAllHref}
+          className="text-sm text-white/40 hover:text-white/70 transition-colors mb-0.5"
+        >
+          See all →
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function SeeAllButton({ href, label = 'See all superinvestors' }: { href: string; label?: string }) {
+  return (
+    <div className="flex justify-center mt-6">
+      <Link
+        href={href}
+        className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/15 text-sm text-white/60 hover:text-white hover:border-white/30 transition-colors"
+      >
+        {label}
+      </Link>
+    </div>
+  )
+}
+
+function Divider({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="flex items-center gap-6 py-4">
+      <div className="flex-1 h-px bg-white/8" />
+      <div className="text-center shrink-0">
+        <div className="text-xl font-bold text-white">{title}</div>
+        <div className="text-xs text-white/40 mt-0.5">{subtitle}</div>
+      </div>
+      <div className="flex-1 h-px bg-white/8" />
+    </div>
+  )
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}) {
-  const sp = await searchParams
-  const rawView = typeof sp.home_view === 'string' ? sp.home_view : 'buys'
-  const homeView: 'buys' | 'sells' = rawView === 'sells' ? 'sells' : 'buys'
-  const rawSource = typeof sp.home_source === 'string' ? sp.home_source : 'all'
-  const homeSource: Source = ['insiders', 'superinvestors', 'all'].includes(rawSource)
-    ? (rawSource as Source)
-    : 'all'
+export default async function HomePage() {
+  const data = await getHomepageData()
 
-  const [stats, recentTrades, topSuperinvestors] = await Promise.all([
-    getStats(),
-    getRecentTrades(),
-    getTopSuperinvestors(),
-  ])
+  const {
+    stats,
+    superinvestors_top10,
+    superinvestor_most_owned,
+    superinvestor_biggest,
+    superinvestor_activity,
+    insider_most_active,
+    insider_activity,
+    insider_biggest,
+  } = data
 
-  // Fetch top stocks based on source
-  const [topInsiders, topSuper, topCombined] = await Promise.all([
-    homeSource === 'insiders' ? getTopInsiders(homeView) : Promise.resolve<TopInsiderRow[]>([]),
-    homeSource === 'superinvestors' ? getTopSuperinvestorStocks() : Promise.resolve<TopSuperRow[]>([]),
-    homeSource === 'all' ? getTopCombinedStocks() : Promise.resolve<TopCombinedRow[]>([]),
-  ])
+  const siActivityDatasets = [
+    [superinvestor_activity.buys_1q, superinvestor_activity.buys_2q],
+    [superinvestor_activity.sells_1q, superinvestor_activity.sells_2q],
+  ] as const
 
-  const portfolioView = homeView === 'buys' ? 'qtr-buys' : 'qtr-sells'
-  const grandPortfolioUrl =
-    homeSource === 'insiders' ? `/grand-portfolio?source=insiders&view=${portfolioView}`
-    : homeSource === 'superinvestors' ? '/grand-portfolio?source=superinvestors'
-    : '/grand-portfolio'
-
-  // Source switch URLs
-  const sourceSwitchUrls = {
-    insiders: `/?home_source=insiders&home_view=${homeView}`,
-    superinvestors: '/?home_source=superinvestors',
-    all: '/?home_source=all',
-  }
+  const insiderActivityDatasets = [
+    [insider_activity.buys_30d, insider_activity.buys_90d],
+    [insider_activity.sells_30d, insider_activity.sells_90d],
+  ] as const
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-      {/* Hero */}
-      <div className="max-w-3xl mx-auto text-center mb-16">
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-5">
-          Track What Insiders Are Actually Trading
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      {/* ── Section 1: Hero ────────────────────────────────────────────────── */}
+      <section className="py-20 max-w-3xl mx-auto text-center">
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-5 leading-tight">
+          Track What the Smart Money Is Doing
         </h1>
-        <p className="text-lg text-white/60 mb-10 leading-relaxed">
-          Real-time SEC Form 4 disclosures and congressional stock trades,
+        <p className="text-lg text-white/55 mb-10 leading-relaxed">
+          Real-time SEC insider trades and superinvestor 13F portfolios,
           organized and searchable.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
           <Link
             href="/insiders"
-            className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-white text-[#0f1117] font-semibold hover:bg-white/90 transition-colors"
+            className="inline-flex items-center justify-center px-7 py-3 rounded-lg bg-white text-[#0f1117] font-semibold hover:bg-white/90 transition-colors"
           >
             Insider Trades →
           </Link>
-          {/* HIDDEN: congress data pending FMP activation */}
-          {/* <Link
-            href="/politicians"
-            className="inline-flex items-center justify-center px-6 py-3 rounded-lg border border-white/20 text-white font-medium hover:bg-white/5 transition-colors"
+          <Link
+            href="/superinvestors"
+            className="inline-flex items-center justify-center px-7 py-3 rounded-lg border border-white/20 text-white font-medium hover:bg-white/5 hover:border-white/35 transition-colors"
           >
-            Congressional Trades →
-          </Link> */}
+            Superinvestors →
+          </Link>
         </div>
-      </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto mb-20">
-        <div className="rounded-xl border border-white/8 bg-white/3 p-6 text-left">
-          <p className="text-3xl font-bold text-white tabular-nums">
-            {stats.insiderCount.toLocaleString('en-US')}
-          </p>
-          <p className="mt-1 text-sm text-white/50">insider trades tracked</p>
+        {/* Stat row */}
+        <div className="flex items-center justify-center gap-3 text-sm text-white/40 flex-wrap">
+          <span>
+            <span className="font-semibold text-white/70 tabular-nums">
+              {stats.insider_count.toLocaleString('en-US')}
+            </span>{' '}
+            insider trades
+          </span>
+          <span className="text-white/20">·</span>
+          <span>
+            <span className="font-semibold text-white/70 tabular-nums">{stats.superinvestor_count}</span>{' '}
+            superinvestors
+          </span>
+          <span className="text-white/20">·</span>
+          <span>Updated daily</span>
         </div>
-        {/* HIDDEN: congress data pending FMP activation */}
-        {/* <div className="rounded-xl border border-white/8 bg-white/3 p-6 text-left">
-          <p className="text-3xl font-bold text-white/30 tabular-nums">
-            {stats.congressCount.toLocaleString('en-US')}
-          </p>
-          <p className="mt-1 text-sm text-white/50">congressional trades (coming soon)</p>
-        </div> */}
-        <div className="rounded-xl border border-white/8 bg-white/3 p-6 text-left">
-          <p className="text-sm font-medium text-white/40 uppercase tracking-wide mb-1">
-            Last updated
-          </p>
-          <p className="text-lg font-semibold text-white">
-            {stats.lastUpdated ? formatDate(stats.lastUpdated) : '—'}
-          </p>
-        </div>
-      </div>
+      </section>
 
-      {/* Two-column sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      {/* ── Section 2: Superinvestors Top 10 ─────────────────────────────── */}
+      <section className="pb-16">
+        <SectionHeader
+          title="Superinvestors"
+          subtitle="Recently updated portfolios"
+          seeAllHref="/superinvestors"
+        />
 
-        {/* Top Stocks — source-switchable */}
-        <div>
-          {/* Source switch */}
-          <div className="flex items-center justify-between mb-3">
-            <DataSourceSwitch value={homeSource} urls={sourceSwitchUrls} />
-            <Link
-              href={grandPortfolioUrl}
-              className="text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              View full →
-            </Link>
+        {superinvestors_top10.length === 0 ? (
+          <div className="rounded-xl border border-white/8 bg-white/3 p-12 text-center text-sm text-white/30">
+            No data yet.
           </div>
-
-          {/* Buys/Sells tabs — insiders only */}
-          {homeSource === 'insiders' && (
-            <div className="flex items-center gap-1 rounded-md border border-white/10 bg-white/3 p-0.5 mb-3 w-fit">
-              <Link
-                href={`/?home_source=insiders&home_view=buys`}
-                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                  homeView === 'buys'
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'text-white/40 hover:text-white/70'
-                }`}
-              >
-                Top Buys – Qtr
-              </Link>
-              <Link
-                href={`/?home_source=insiders&home_view=sells`}
-                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                  homeView === 'sells'
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'text-white/40 hover:text-white/70'
-                }`}
-              >
-                Top Sells – Qtr
-              </Link>
-            </div>
-          )}
-
-          {/* Insiders table */}
-          {homeSource === 'insiders' && (
-            topInsiders.length === 0 ? (
-              <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
-                <p className="text-sm text-white/30">No data for this period yet.</p>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-white/8 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/8 bg-white/3">
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 w-8">#</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Symbol</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Company</th>
-                      <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Insiders</th>
-                      <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Price</th>
-                      <th className="px-3 py-2.5 text-center text-xs font-medium text-white/40 w-8">B/S</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {topInsiders.map((row) => (
-                      <tr key={row.ticker} className="hover:bg-white/3 transition-colors">
-                        <td className="px-3 py-2.5 text-white/30 text-xs">{row.rank}</td>
-                        <td className="px-3 py-2.5">
-                          <Link href={`/tickers/${row.ticker}`} className="font-mono font-bold text-white hover:text-white/70 transition-colors text-xs">
-                            {row.ticker}
-                          </Link>
-                        </td>
-                        <td className="px-3 py-2.5 text-white/50 text-xs truncate max-w-[140px] hidden sm:table-cell">{row.company_name ?? '–'}</td>
-                        <td className="px-3 py-2.5 text-right">
-                          <span className="font-bold text-white text-xs">{row.count}</span>
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-white/50 font-mono text-xs">
-                          {row.close_price != null ? `$${row.close_price.toFixed(2)}` : '–'}
-                        </td>
-                        <td className="px-3 py-2.5 text-center text-xs">
-                          {homeView === 'sells' ? (
-                            <span className="text-red-400">▼</span>
-                          ) : row.buyBias ? (
-                            <span className="text-green-400">▲</span>
-                          ) : row.sellBias ? (
-                            <span className="text-red-400">▼</span>
-                          ) : (
-                            <span className="text-white/30">–</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
-
-          {/* Superinvestors table */}
-          {homeSource === 'superinvestors' && (
-            topSuper.length === 0 ? (
-              <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
-                <p className="text-sm text-white/30">No data yet.</p>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-white/8 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/8 bg-white/3">
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 w-8">#</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Symbol</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Company</th>
-                      <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Investors</th>
-                      <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {topSuper.map((row) => (
-                      <tr key={row.ticker} className="hover:bg-white/3 transition-colors">
-                        <td className="px-3 py-2.5 text-white/30 text-xs">{row.rank}</td>
-                        <td className="px-3 py-2.5">
-                          <Link href={`/tickers/${row.ticker}`} className="font-mono font-bold text-white hover:text-white/70 transition-colors text-xs">
-                            {row.ticker}
-                          </Link>
-                        </td>
-                        <td className="px-3 py-2.5 text-white/50 text-xs truncate max-w-[140px] hidden sm:table-cell">{row.company_name ?? '–'}</td>
-                        <td className="px-3 py-2.5 text-right">
-                          <span className="font-bold text-white text-xs">{row.count}</span>
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-white/50 font-mono text-xs">
-                          {row.close_price != null ? `$${row.close_price.toFixed(2)}` : '–'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
-
-          {/* Combined table */}
-          {homeSource === 'all' && (
-            topCombined.length === 0 ? (
-              <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
-                <p className="text-sm text-white/30">No data yet.</p>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-white/8 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/8 bg-white/3">
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 w-8">#</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Symbol</th>
-                      <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Company</th>
-                      <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Holders</th>
-                      <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {topCombined.map((row) => (
-                      <tr key={row.ticker} className="hover:bg-white/3 transition-colors">
-                        <td className="px-3 py-2.5 text-white/30 text-xs">{row.rank}</td>
-                        <td className="px-3 py-2.5">
-                          <Link href={`/tickers/${row.ticker}`} className="font-mono font-bold text-white hover:text-white/70 transition-colors text-xs">
-                            {row.ticker}
-                          </Link>
-                        </td>
-                        <td className="px-3 py-2.5 text-white/50 text-xs truncate max-w-[140px] hidden sm:table-cell">{row.company_name ?? '–'}</td>
-                        <td className="px-3 py-2.5 text-right">
-                          <span className="font-bold text-white text-xs">{row.count}</span>
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-white/50 font-mono text-xs">
-                          {row.close_price != null ? `$${row.close_price.toFixed(2)}` : '–'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
-        </div>
-
-        {/* Recent Trades */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-white">Recent Trades</h2>
-            <Link
-              href="/insiders"
-              className="text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              View all →
-            </Link>
-          </div>
-          {recentTrades.length === 0 ? (
-            <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
-              <p className="text-sm text-white/30">No recent trades.</p>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-white/8 overflow-hidden">
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-xl border border-white/8">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/8 bg-white/3">
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Insider</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Stock</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Type</th>
-                    <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Value</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-medium text-white/40 uppercase tracking-wide">
+                      Superinvestor
+                    </th>
+                    <th className="px-5 py-3.5 text-right text-xs font-medium text-white/40 uppercase tracking-wide">
+                      Portfolio
+                    </th>
+                    <th className="px-5 py-3.5 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">
+                      Stocks
+                    </th>
+                    <th className="px-5 py-3.5 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden md:table-cell">
+                      Last update
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {recentTrades.map((trade) => (
-                    <tr key={trade.id} className="hover:bg-white/3 transition-colors">
-                      <td className="px-3 py-2.5 text-white/50 text-xs whitespace-nowrap">
-                        {formatDate(trade.trade_date)}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs">
-                        {trade.insiders ? (
-                          <Link
-                            href={`/insiders/${trade.insiders.id}`}
-                            className="text-white hover:text-white/70 transition-colors truncate max-w-[100px] block"
-                          >
-                            {trade.insiders.name ?? '–'}
-                          </Link>
-                        ) : (
-                          <span className="text-white/40">–</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5">
+                  {superinvestors_top10.map((si: SuperinvestorTop10Row) => (
+                    <tr key={si.id} className="hover:bg-white/3 transition-colors group">
+                      <td className="px-5 py-3.5">
                         <Link
-                          href={`/tickers/${trade.ticker}`}
-                          className="font-mono font-bold text-white hover:text-white/70 transition-colors text-xs"
+                          href={`/superinvestors/${si.id}`}
+                          className="text-violet-400 hover:text-violet-300 transition-colors font-medium"
                         >
-                          {trade.ticker?.toUpperCase() ?? '–'}
+                          {si.name}
+                          {si.fund_name && (
+                            <span className="text-white/40 font-normal"> – {si.fund_name}</span>
+                          )}
                         </Link>
                       </td>
-                      <td className="px-3 py-2.5">
-                        <TradeBadge type={trade.trade_type} />
+                      <td className="px-5 py-3.5 text-right tabular-nums font-semibold text-white">
+                        {si.total_aum_usd > 0 ? formatValuePlus(si.total_aum_usd) : '–'}
                       </td>
-                      <td className="px-3 py-2.5 text-right text-white font-medium tabular-nums text-xs">
-                        {formatValue(trade.total_value)}
+                      <td className="px-5 py-3.5 text-right tabular-nums text-white/60 hidden sm:table-cell">
+                        {si.holdings_count > 0 ? si.holdings_count : '–'}
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-white/40 text-xs hidden md:table-cell whitespace-nowrap">
+                        {formatFilingDate(si.latest_filing_date)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
+
+            <SeeAllButton href="/superinvestors" label="See all superinvestors" />
+          </>
+        )}
+      </section>
+
+      {/* ── Section 3: Three superinvestor cards ──────────────────────────── */}
+      <section className="pb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1: Most owned */}
+          <CardShell title="Top 10 Most Owned" seeMoreHref="/grand-portfolio?source=superinvestors">
+            {superinvestor_most_owned.length === 0 ? (
+              <EmptyCardRow />
+            ) : (
+              <TickerRows
+                rows={superinvestor_most_owned.map((r: MostOwnedRow) => ({
+                  ticker: r.ticker,
+                  company_name: r.company_name,
+                  value: r.investor_count,
+                }))}
+                valueLabel="Gurus"
+                valueColor="text-violet-400"
+              />
+            )}
+          </CardShell>
+
+          {/* Card 2: Activity (buys/sells) — client component */}
+          <ActivityCard
+            title="Top 10"
+            opt1Labels={['Buys', 'Sells']}
+            opt2Labels={['Last Qtr', 'Last 2 Qtrs']}
+            datasets={siActivityDatasets}
+            countLabel="Gurus"
+            isBuyFirst={true}
+            seeMoreHref="/grand-portfolio?source=superinvestors"
+          />
+
+          {/* Card 3: Biggest investments */}
+          <CardShell title="Top 10 Biggest Investments" seeMoreHref="/superinvestors">
+            {superinvestor_biggest.length === 0 ? (
+              <EmptyCardRow />
+            ) : (
+              <TickerRows
+                rows={superinvestor_biggest.map((r: BiggestRow) => ({
+                  ticker: r.ticker,
+                  company_name: r.company_name,
+                  value: r.total_value,
+                }))}
+                valueLabel="Value"
+                valueFormatter={formatValuePlus}
+                valueColor="text-white/70"
+              />
+            )}
+          </CardShell>
         </div>
+      </section>
 
-      </div>
+      {/* ── Section 4: Insider divider ────────────────────────────────────── */}
+      <section className="pb-10">
+        <Divider title="Insider Trades" subtitle="SEC Form 4 disclosures" />
+      </section>
 
-      {/* Superinvestors teaser */}
-      {topSuperinvestors.length > 0 && (
-        <div className="mt-16">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-white">Superinvestors</h2>
-            <Link
-              href="/superinvestors"
-              className="text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              View all →
-            </Link>
-          </div>
-          <div className="rounded-xl border border-white/8 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/8 bg-white/3">
-                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Investor</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Holdings</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">AUM</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {topSuperinvestors.map((si) => (
-                  <tr key={si.id} className="hover:bg-white/3 transition-colors">
-                    <td className="px-3 py-2.5">
-                      <Link
-                        href={`/superinvestors/${si.id}`}
-                        className="text-white hover:text-white/70 transition-colors text-xs font-medium"
-                      >
-                        {si.name}
-                      </Link>
-                      {si.fund_name && (
-                        <p className="text-[10px] text-white/30 mt-0.5">{si.fund_name}</p>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 text-right text-white text-xs tabular-nums">
-                      {si.holdings_count}
-                    </td>
-                    <td className="px-3 py-2.5 text-right text-white font-medium tabular-nums text-xs">
-                      {formatValue(si.total_aum_usd)}
-                    </td>
+      {/* ── Section 5: Three insider cards ───────────────────────────────── */}
+      <section className="pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1: Most active insiders */}
+          <CardShell title="Top 10 Most Active Insiders" seeMoreHref="/insiders">
+            {insider_most_active.length === 0 ? (
+              <EmptyCardRow />
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    <th className="px-4 py-2 text-left font-medium text-white/30">Name</th>
+                    <th className="px-4 py-2 text-left font-medium text-white/30 hidden sm:table-cell">Company</th>
+                    <th className="px-4 py-2 text-right font-medium text-white/30">Trades</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-white/4">
+                  {insider_most_active.map((row: MostActiveInsiderRow) => (
+                    <tr key={row.id} className="hover:bg-white/3 transition-colors">
+                      <td className="px-4 py-2">
+                        <Link
+                          href={`/insiders/${row.id}`}
+                          className="font-medium text-violet-400 hover:text-violet-300 transition-colors truncate block max-w-[110px]"
+                        >
+                          {row.name ?? '–'}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2 text-white/40 truncate max-w-[120px] hidden sm:table-cell text-[11px]">
+                        {row.primary_company ?? '–'}
+                      </td>
+                      <td className="px-4 py-2 text-right font-semibold tabular-nums text-white/70">
+                        {row.trade_count}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </CardShell>
+
+          {/* Card 2: Activity (buys/sells) — client component */}
+          <ActivityCard
+            title="Top 10"
+            opt1Labels={['Buys', 'Sells']}
+            opt2Labels={['30 Days', '90 Days']}
+            datasets={insiderActivityDatasets}
+            countLabel="Insiders"
+            isBuyFirst={true}
+            seeMoreHref="/grand-portfolio?source=insiders"
+          />
+
+          {/* Card 3: Biggest trades */}
+          <CardShell title="Top 10 Biggest Trades" seeMoreHref="/insiders">
+            {insider_biggest.length === 0 ? (
+              <EmptyCardRow />
+            ) : (
+              <TickerRows
+                rows={insider_biggest.map((r: BiggestRow) => ({
+                  ticker: r.ticker,
+                  company_name: r.company_name,
+                  value: r.total_value,
+                }))}
+                valueLabel="Volume"
+                valueFormatter={formatValuePlus}
+                valueColor="text-white/70"
+              />
+            )}
+          </CardShell>
+        </div>
+      </section>
+
+      {/* ── Section 6: About / Explainer ──────────────────────────────────── */}
+      <section className="pb-20">
+        <div className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+            {/* Left: Text */}
+            <div className="px-10 py-14">
+              <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-3">
+                investing tools
+              </p>
+              <h2 className="text-3xl font-bold text-white mb-4 leading-snug">
+                Make more informed
+                <br />investment decisions
+              </h2>
+              <p className="text-white/50 mb-10 leading-relaxed text-sm">
+                Track what the world&apos;s best investors are buying and selling —
+                sourced directly from public SEC filings.
+              </p>
+
+              {/* FAQ items */}
+              <div className="space-y-8">
+                <div>
+                  <div className="flex items-start gap-3 mb-2">
+                    <span className="text-violet-400 font-bold mt-0.5 shrink-0">&gt;&gt;</span>
+                    <h3 className="text-sm font-semibold text-white">What are 13F Filings?</h3>
+                  </div>
+                  <p className="text-xs text-white/45 leading-relaxed pl-6">
+                    13F filings are quarterly reports submitted to the SEC by any investment
+                    manager controlling at least $100M. The managers we track are well-known
+                    value investors like Warren Buffett. They must file within 45 days of each
+                    quarter end, disclosing all qualifying US equity positions.
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-start gap-3 mb-2">
+                    <span className="text-violet-400 font-bold mt-0.5 shrink-0">&gt;&gt;</span>
+                    <h3 className="text-sm font-semibold text-white">Why track insider trades?</h3>
+                  </div>
+                  <p className="text-xs text-white/45 leading-relaxed pl-6">
+                    Company insiders — directors, executives, and major shareholders — must report
+                    their own stock trades within 2 business days via SEC Form 4. When insiders
+                    buy their own stock, it can signal strong conviction in the company&apos;s future.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-10">
+                <Link
+                  href="/superinvestors"
+                  className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-white/20 text-sm text-white/70 hover:text-white hover:border-white/40 transition-colors"
+                >
+                  <span>👥</span> Superinvestors
+                </Link>
+              </div>
+            </div>
+
+            {/* Right: Animation */}
+            <div className="flex items-center justify-center px-10 py-14 border-t lg:border-t-0 lg:border-l border-white/8">
+              <NetworkAnimation />
+            </div>
           </div>
         </div>
-      )}
+      </section>
     </main>
   )
 }
