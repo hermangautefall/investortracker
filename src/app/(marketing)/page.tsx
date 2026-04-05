@@ -116,6 +116,48 @@ async function getTopHeld(homeView: 'buys' | 'sells'): Promise<TopRow[]> {
   }))
 }
 
+type TopSuperinvestor = {
+  id: string
+  name: string
+  fund_name: string | null
+  holdings_count: number
+  total_aum_usd: number
+}
+
+async function getTopSuperinvestors(): Promise<TopSuperinvestor[]> {
+  const supabase = getAdminClient()
+  const [investorsRes, holdingsRes] = await Promise.all([
+    supabase.from('superinvestors').select('id, name, fund_name'),
+    supabase.from('portfolio_holdings').select('investor_id, ticker, value_usd'),
+  ])
+  if (!investorsRes.data) return []
+
+  const summaryMap = new Map<string, { tickers: Set<string>; aum: number }>()
+  for (const h of holdingsRes.data ?? []) {
+    if (!h.investor_id) continue
+    if (!summaryMap.has(h.investor_id))
+      summaryMap.set(h.investor_id, { tickers: new Set(), aum: 0 })
+    const s = summaryMap.get(h.investor_id)!
+    if (h.ticker) s.tickers.add(h.ticker)
+    s.aum += h.value_usd ?? 0
+  }
+
+  return investorsRes.data
+    .map((si) => {
+      const s = summaryMap.get(si.id)
+      return {
+        id: si.id,
+        name: si.name,
+        fund_name: si.fund_name,
+        holdings_count: s ? s.tickers.size : 0,
+        total_aum_usd: s ? s.aum : 0,
+      }
+    })
+    .filter((si) => si.total_aum_usd > 0)
+    .sort((a, b) => b.total_aum_usd - a.total_aum_usd)
+    .slice(0, 5)
+}
+
 async function getRecentTrades(): Promise<RecentTrade[]> {
   const supabase = getAdminClient()
   const { data } = await supabase
@@ -137,10 +179,11 @@ export default async function HomePage({
   const rawView = typeof sp.home_view === 'string' ? sp.home_view : 'buys'
   const homeView: 'buys' | 'sells' = rawView === 'sells' ? 'sells' : 'buys'
 
-  const [stats, topHeld, recentTrades] = await Promise.all([
+  const [stats, topHeld, recentTrades, topSuperinvestors] = await Promise.all([
     getStats(),
     getTopHeld(homeView),
     getRecentTrades(),
+    getTopSuperinvestors(),
   ])
 
   const portfolioView = homeView === 'buys' ? 'qtr-buys' : 'qtr-sells'
@@ -359,6 +402,55 @@ export default async function HomePage({
         </div>
 
       </div>
+
+      {/* Super Investors teaser */}
+      {topSuperinvestors.length > 0 && (
+        <div className="mt-16">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-white">Super Investors</h2>
+            <Link
+              href="/superinvestors"
+              className="text-xs text-white/40 hover:text-white/70 transition-colors"
+            >
+              View all →
+            </Link>
+          </div>
+          <div className="rounded-xl border border-white/8 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/8 bg-white/3">
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Investor</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Holdings</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">AUM</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {topSuperinvestors.map((si) => (
+                  <tr key={si.id} className="hover:bg-white/3 transition-colors">
+                    <td className="px-3 py-2.5">
+                      <Link
+                        href={`/superinvestors/${si.id}`}
+                        className="text-white hover:text-white/70 transition-colors text-xs font-medium"
+                      >
+                        {si.name}
+                      </Link>
+                      {si.fund_name && (
+                        <p className="text-[10px] text-white/30 mt-0.5">{si.fund_name}</p>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-white text-xs tabular-nums">
+                      {si.holdings_count}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-white font-medium tabular-nums text-xs">
+                      {formatValue(si.total_aum_usd)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

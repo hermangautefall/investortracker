@@ -98,7 +98,7 @@ export default async function TickerActivityPage({
   const cutoffStr = cutoff.toISOString().slice(0, 10)
 
   const supabase = getAdminClient()
-  const [summaryRes, congressRes, insiderRes] = await Promise.all([
+  const [summaryRes, congressRes, insiderRes, superinvestorRes] = await Promise.all([
     supabase
       .from('ticker_activity_summary')
       .select('data_type, trade_count, total_volume, buy_count, sell_count, last_trade')
@@ -123,6 +123,11 @@ export default async function TickerActivityPage({
       .eq('ticker', ticker)
       .gte('trade_date', cutoffStr)
       .order('trade_date', { ascending: false }),
+    supabase
+      .from('superinvestor_latest_holdings')
+      .select('investor_id, investor_name, fund_name, shares, value_usd, portfolio_weight, quarter')
+      .eq('ticker', ticker)
+      .order('portfolio_weight', { ascending: false }),
   ])
 
   const summaryRows = summaryRes.data ?? []
@@ -131,8 +136,19 @@ export default async function TickerActivityPage({
   const insiderSummary =
     (summaryRows.find((r) => r.data_type === 'insider') as SummaryRow | undefined) ?? null
 
+  type SuperinvestorHolding = {
+    investor_id: string
+    investor_name: string | null
+    fund_name: string | null
+    shares: number | null
+    value_usd: number | null
+    portfolio_weight: number | null
+    quarter: string | null
+  }
+
   const congressTrades = (congressRes.data ?? []) as unknown as CongressTrade[]
   const insiderTrades = (insiderRes.data ?? []) as unknown as InsiderTrade[]
+  const superinvestorHoldings = (superinvestorRes.data ?? []) as SuperinvestorHolding[]
 
   // Try to get company name from either dataset
   const companyName =
@@ -301,6 +317,67 @@ export default async function TickerActivityPage({
           )}
         </div>
       </div>
+
+      {/* Super Investor Holdings */}
+      {superinvestorHoldings.length > 0 && (
+        <div className="mt-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-white">
+              Super Investor Holdings
+              <span className="ml-2 text-xs text-white/30 font-normal">
+                {superinvestorHoldings.length} investors
+              </span>
+            </h2>
+            <Link
+              href="/superinvestor-consensus"
+              className="text-xs text-white/40 hover:text-white/70 transition-colors"
+            >
+              Consensus →
+            </Link>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-white/8">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/8 bg-white/3">
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Investor</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Fund</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Weight</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40 hidden md:table-cell">Shares</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Quarter</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {superinvestorHoldings.map((h) => (
+                  <tr key={h.investor_id} className="hover:bg-white/3 transition-colors">
+                    <td className="px-3 py-2.5">
+                      <Link
+                        href={`/superinvestors/${h.investor_id}`}
+                        className="text-white hover:text-white/70 transition-colors text-xs"
+                      >
+                        {h.investor_name ?? '–'}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2.5 text-white/40 text-xs hidden sm:table-cell">
+                      {h.fund_name ?? '–'}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-white tabular-nums text-xs">
+                      {h.portfolio_weight != null
+                        ? `${Number(h.portfolio_weight).toFixed(2)}%`
+                        : '–'}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-white/50 tabular-nums text-xs hidden md:table-cell">
+                      {formatShares(h.shares)}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-white/30 text-xs">
+                      {h.quarter ?? '–'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

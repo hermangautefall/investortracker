@@ -1,19 +1,25 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X } from 'lucide-react'
+import { Menu } from 'lucide-react'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from '@/components/ui/sheet'
 
 const NAV_LINKS = [
   { href: '/insiders', label: 'Insider Trades' },
   { href: '/politicians', label: 'Politicians' },
+  { href: '/superinvestors', label: 'Super Investors' },
   { href: '/grand-portfolio', label: 'Grand Portfolio' },
-  { href: null, label: 'Super Investors', disabled: true },
 ]
 
 export function Header() {
-  const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
 
   return (
@@ -26,67 +32,59 @@ export function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden sm:flex items-center gap-6">
-          {NAV_LINKS.map((link) =>
-            link.disabled || !link.href ? (
-              <span
-                key={link.label}
-                className="text-sm text-white/25 cursor-not-allowed select-none"
-              >
-                {link.label}
-              </span>
-            ) : (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm transition-colors ${
-                  pathname.startsWith(link.href)
-                    ? 'text-white font-medium'
-                    : 'text-white/60 hover:text-white'
-                }`}
-              >
-                {link.label}
-              </Link>
-            )
-          )}
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`text-sm transition-colors ${
+                pathname.startsWith(link.href)
+                  ? 'text-white font-medium'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
-        {/* Mobile hamburger */}
-        <button
-          className="sm:hidden p-1 text-white/60 hover:text-white transition-colors"
-          onClick={() => setMobileOpen((o) => !o)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {/* Mobile hamburger — Sheet slides in from right */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button
+              className="sm:hidden p-1 text-white/60 hover:text-white transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+          </SheetTrigger>
+          <SheetContent
+            side="right"
+            className="bg-[#0f1117] border-white/8 w-64 p-0"
+          >
+            <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/8">
+              <SheetTitle className="text-sm font-semibold text-white text-left">
+                [SITE NAME]
+              </SheetTitle>
+            </SheetHeader>
+            <nav className="px-6 py-4 flex flex-col gap-1">
+              {NAV_LINKS.map((link) => (
+                <SheetClose asChild key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`py-2 text-sm transition-colors ${
+                      pathname.startsWith(link.href)
+                        ? 'text-white font-medium'
+                        : 'text-white/60 hover:text-white'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                </SheetClose>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
       </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="sm:hidden border-t border-white/8 bg-[#0f1117]">
-          <nav className="px-4 py-3 flex flex-col gap-3">
-            {NAV_LINKS.map((link) =>
-              link.disabled || !link.href ? (
-                <span key={link.label} className="text-sm text-white/25 cursor-not-allowed">
-                  {link.label}
-                </span>
-              ) : (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`text-sm transition-colors ${
-                    pathname.startsWith(link.href)
-                      ? 'text-white font-medium'
-                      : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              )
-            )}
-          </nav>
-        </div>
-      )}
     </header>
   )
 }
