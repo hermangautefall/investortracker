@@ -90,10 +90,10 @@ export default async function SuperInvestorsPage() {
                   Holdings
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">
-                  AUM
+                  Portfolio Value
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">
-                  Latest
+                  Latest Quarter
                 </th>
               </tr>
             </thead>
