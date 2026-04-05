@@ -44,7 +44,8 @@ investortracker/
 │   ├── politicians/               Congressional trade tracker
 │   ├── insiders/                  Insider trade tracker
 │   ├── tickers/[ticker]/          Per-ticker activity page
-│   ├── superinvestors/            Phase 2 – not yet built
+│   ├── superinvestors/            Super investor list + profile pages
+│   ├── superinvestor-consensus/   Most widely held stocks view
 │   ├── portfolio-copier/          Phase 3 – not yet built
 │   └── api/v1/                    All API endpoints
 ├── apps/pipeline/
@@ -95,8 +96,8 @@ investortracker/
 | `stock_prices` | Cached daily closing prices |
 | `pipeline_state` | Incremental checkpoint per job |
 | `pipeline_runs` | Execution log for every job run |
-| `superinvestors` | Phase 2 – defined, not yet populated |
-| `portfolio_holdings` | Phase 2 – defined, not yet populated |
+| `superinvestors` | Super investor profiles (name, fund, CIK) |
+| `portfolio_holdings` | Quarterly 13F holdings per investor |
 
 ### Materialized views (refreshed daily)
 
@@ -104,12 +105,17 @@ investortracker/
 |---|---|
 | `ticker_activity_summary` | Trade counts and volume per ticker |
 | `politician_summary` | Trade stats per politician |
+| `superinvestor_consensus` | Most widely held stocks across all investors |
+| `superinvestor_latest_holdings` | Most recent quarter per investor × ticker |
 
 ### Key column conventions
 - Every insertable table has a `dedup_key TEXT UNIQUE NOT NULL`
 - Every row stores original source data in `raw JSONB`
 - Every row identifies its origin in `source TEXT`
 - Timestamps use `TIMESTAMPTZ`, dates use `DATE`
+- `portfolio_holdings.dedup_key`: MD5 of `cik + cusip_or_ticker_or_company + quarter`
+- Quarter format is `"2025Q4"` (year first, no space) — not `"Q4 2025"`
+- `portfolio_holdings.ticker` is nullable — many 13F positions are CUSIP-only
 
 ---
 
@@ -147,9 +153,13 @@ investortracker/
 | `insiders` | ~372+ | **WORKING** |
 | `congress_trades` | 0 | **EMPTY** – FMP paid tier required |
 | `politicians` | 0 | **EMPTY** – depends on congress_trades |
-| `stock_prices` | 0 | **EMPTY** – enriched after insider_trades populate |
+| `stock_prices` | varies | **WORKING** – enriched for insider_trades tickers |
 | `ticker_activity_summary` | ~214 | **WORKING** |
 | `politician_summary` | 0 | **EMPTY** – depends on congress_trades |
+| `superinvestors` | 84 | **WORKING** – seeded manually |
+| `portfolio_holdings` | ~5,258 | **WORKING** – SEC EDGAR 13F via edgartools |
+| `superinvestor_consensus` | 390 tickers | **WORKING** – materialized view |
+| `superinvestor_latest_holdings` | 5,148 rows | **WORKING** – materialized view |
 
 ### Critical implementation notes (hard-won fixes)
 
@@ -160,6 +170,12 @@ investortracker/
 - **Intra-batch dedup**: deduplicate by `dedup_key` in loader before batching; use `ignore_duplicates=True` on upsert
 - **`refresh_materialized_views()`**: RPC function exists in DB (migration 003) — do not use `exec_sql`
 - **edgartools param**: `get_filings(form="4", filing_date="YYYY-MM-DD")` — not `date=`
+- **13F DataFrame columns are capitalized**: `Ticker`, `Issuer`, `Cusip`, `SharesPrnAmount`, `Value` — not lowercase
+- **13F dedup_key**: uses CUSIP as primary identifier (always present); falls back to ticker, then company_name
+- **13F `shares`/`value_usd`**: edgartools returns floats (e.g. `669888.0`) — must cast to `int()` before BIGINT insert
+- **13F MAX_FILINGS_PER_INVESTOR = 4**: caps quarters fetched per first run to avoid full history backfill
+- **13F data is quarterly, 45 days delayed**: Q4 2025 filings arrive ~Feb 2026; checkpoint handles incremental updates
+- **stock_prices gap for 13F tickers**: `enrich_prices` only runs for tickers in `insider_trades`; superinvestor-only tickers (e.g. MSFT, GOOGL) won't have prices until a separate enrichment step is added
 
 ---
 
@@ -168,6 +184,7 @@ investortracker/
 | Source | Status | Notes |
 |---|---|---|
 | SEC Form 4 (insider trades) | **WORKING** | edgartools `get_filings(form="4", filing_date=...)` |
+| SEC 13F-HR (superinvestor holdings) | **WORKING** | edgartools `Company(cik).get_filings(form="13F-HR")` |
 | Congressional trades (House) | **PENDING** | FMP paid tier required — scraper is written and correct, do not remove |
 | Congressional trades (Senate) | **PENDING** | FMP paid tier required — scraper is written and correct, do not remove |
 
@@ -225,9 +242,10 @@ A single bad row must never stop the rest of the job.
 
 ### Daily job sequence (GitHub Actions, 08:00 UTC)
 ```
-fetch_congress → fetch_form4 → enrich_prices → refresh_aggregates
+fetch_congress → fetch_form4 → enrich_prices → refresh_aggregates → fetch_13f
 ```
 Each job waits for the previous to succeed (`needs:` in workflow).
+`fetch_13f` runs last — it is the slowest and least time-sensitive.
 
 ---
 
@@ -267,13 +285,13 @@ Each job waits for the previous to succeed (`needs:` in workflow).
 | Phase | Status | Contents |
 |---|---|---|
 | 1 | In progress | Congressional trades + insider trades |
-| 2 | Planned | Super investor tracking (13F filings) |
+| 2 | **Done** | Super investor tracking (13F filings) |
 | 3 | Planned | Portfolio copier tool |
 | Future | Planned | Auth (Supabase Auth) + payments (Stripe) |
 
-Phase 2 tables (`superinvestors`, `portfolio_holdings`) are
-already defined in the database schema – they just aren't
-populated yet. Do not delete or modify them.
+Phase 2 is complete: `superinvestors` and `portfolio_holdings` are populated,
+`superinvestor_consensus` and `superinvestor_latest_holdings` materialized views
+are live, all API endpoints and frontend pages are built.
 
 ---
 
@@ -304,4 +322,4 @@ populated yet. Do not delete or modify them.
 
 ---
 
-*Last updated: 2026-04-05 – grand portfolio, homepage content, legal pages added*
+*Last updated: 2026-04-05 – Phase 2 superinvestors complete (13F pipeline, API, frontend)*
