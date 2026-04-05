@@ -157,7 +157,7 @@ def load_portfolio_holdings(
 
         rows.append({
             "dedup_key": dedup_key,
-            "superinvestor_id": superinvestor_id,
+            "investor_id": superinvestor_id,
             "ticker": holding.ticker,
             "company_name": holding.company_name,
             "shares": holding.shares,
