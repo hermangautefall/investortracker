@@ -8,7 +8,7 @@ export const ExternalNavigation = () => {
       <div className="container mx-auto px-4 lg:px-6 h-16 flex items-center">
         <Link className="flex items-center space-x-2" href="/">
           <T.H3 className="text-xl font-semibold leading-tight mt-0">
-            [SITE NAME]
+            DataHeimdall
           </T.H3>
         </Link>
         <nav className="ml-auto flex items-center gap-4 sm:gap-6">

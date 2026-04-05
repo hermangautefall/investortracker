@@ -29,7 +29,7 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-4">
         {/* Logo */}
         <Link href="/" className="text-sm font-semibold text-white hover:text-white/80 transition-colors shrink-0">
-          [SITE NAME]
+          DataHeimdall
         </Link>
 
         {/* Search — desktop: centered, mobile: hidden (shown below) */}
@@ -71,7 +71,7 @@ export function Header() {
             >
               <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/8">
                 <SheetTitle className="text-sm font-semibold text-white text-left">
-                  [SITE NAME]
+                  DataHeimdall
                 </SheetTitle>
               </SheetHeader>
               <nav className="px-6 py-4 flex flex-col gap-1">

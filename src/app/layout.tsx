@@ -54,8 +54,11 @@ const roboto_mono = localFont({
 });
 
 export const metadata = {
-  title: '[SITE NAME]',
-  description: 'Track congressional stock trades and SEC insider filings.',
+  title: {
+    default: 'DataHeimdall',
+    template: '%s | DataHeimdall',
+  },
+  description: 'DataHeimdall tracks SEC insider trades and superinvestor 13F portfolios — organized, searchable, and updated daily.',
 };
 
 export default async function RootLayout({

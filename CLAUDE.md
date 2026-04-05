@@ -7,11 +7,11 @@ stock trades (STOCK Act disclosures) and insider trades
 (SEC Form 4 filings). Data is sourced from free public APIs
 and presented in a clean, searchable interface.
 
-> **Working title: "InvestorTracker"** – the final brand name
-> has not been decided. Do NOT use "InvestorTracker" in any
-> user-facing text, page titles, meta tags, UI copy, or email
-> content. Use the placeholder [SITE NAME] everywhere instead,
-> so it can be replaced globally once the name is decided.
+> **Site name is DataHeimdall** (dataheimdall.com).
+> The [SITE NAME] placeholder has been replaced everywhere.
+> Do not reintroduce the placeholder. Use "DataHeimdall" in all
+> user-facing text, page titles, meta tags, UI copy, and email
+> content.
 
 All code, comments, and UI text must be in English.
 
@@ -268,7 +268,7 @@ Each job waits for the previous to succeed (`needs:` in workflow).
 
 ## What NOT to do
 
-- Do not use "InvestorTracker" in user-facing text – use [SITE NAME]
+- Do not use [SITE NAME] placeholders – the site name is DataHeimdall (dataheimdall.com)
 - Do not expose `SUPABASE_SERVICE_ROLE_KEY` in client-side code
 - Do not fetch stock prices one by one – always batch
 - Do not skip `dedup_key` when inserting rows

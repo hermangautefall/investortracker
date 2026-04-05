@@ -3,7 +3,7 @@ export const revalidate = 3600
 export default function AboutPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-white mb-2">About [SITE NAME]</h1>
+      <h1 className="text-3xl font-bold text-white mb-2">About DataHeimdall</h1>
       <p className="text-sm text-white/40 mb-10">Financial transparency, made accessible.</p>
 
       <div className="space-y-8 text-white/70 leading-relaxed text-sm">
@@ -11,7 +11,7 @@ export default function AboutPage() {
         <section>
           <h2 className="text-lg font-semibold text-white mb-3">What We Do</h2>
           <p>
-            [SITE NAME] tracks and displays two categories of financial disclosure data:
+            DataHeimdall tracks and displays two categories of financial disclosure data:
           </p>
           <ul className="list-disc list-inside space-y-2 mt-3">
             <li>
@@ -41,7 +41,7 @@ export default function AboutPage() {
             understand at a glance.
           </p>
           <p className="mt-3">
-            [SITE NAME] exists to make this public information genuinely accessible.
+            DataHeimdall exists to make this public information genuinely accessible.
             We believe financial transparency supports better-informed citizens and
             markets. Anyone should be able to see, quickly and clearly, what the people
             running public companies and writing public policy are doing with their own
@@ -102,7 +102,7 @@ export default function AboutPage() {
         <section>
           <h2 className="text-lg font-semibold text-white mb-3">Important Note</h2>
           <p>
-            [SITE NAME] displays public information for transparency purposes only. This
+            DataHeimdall displays public information for transparency purposes only. This
             is not financial advice. See our{' '}
             <a href="/disclaimer" className="text-white underline underline-offset-2 hover:text-white/70 transition-colors">
               Disclaimer
@@ -120,10 +120,10 @@ export default function AboutPage() {
           <p>
             Questions, feedback, or data corrections:{' '}
             <a
-              href="mailto:[CONTACT EMAIL]"
+              href="mailto:hello@dataheimdall.com"
               className="text-white underline underline-offset-2 hover:text-white/70 transition-colors"
             >
-              [CONTACT EMAIL]
+              hello@dataheimdall.com
             </a>
           </p>
         </section>

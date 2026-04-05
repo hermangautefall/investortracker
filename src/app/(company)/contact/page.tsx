@@ -4,7 +4,7 @@ export default function ContactPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold text-white mb-2">Contact</h1>
-      <p className="text-sm text-white/40 mb-10">Get in touch with the [SITE NAME] team.</p>
+      <p className="text-sm text-white/40 mb-10">Get in touch with the DataHeimdall team.</p>
 
       <div className="rounded-xl border border-white/8 bg-white/3 p-8 space-y-4 text-white/70 text-sm leading-relaxed">
         <p>
@@ -13,10 +13,10 @@ export default function ContactPage() {
         </p>
         <p>
           <a
-            href="mailto:[CONTACT EMAIL]"
+            href="mailto:hello@dataheimdall.com"
             className="text-white text-base font-medium underline underline-offset-2 hover:text-white/70 transition-colors"
           >
-            [CONTACT EMAIL]
+            hello@dataheimdall.com
           </a>
         </p>
         <p className="text-white/40 text-xs pt-2">

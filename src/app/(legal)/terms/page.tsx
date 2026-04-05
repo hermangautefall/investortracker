@@ -11,7 +11,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-white mb-3">Acceptance of Terms</h2>
           <p>
-            By accessing and using [SITE NAME], you accept and agree to be bound by these
+            By accessing and using DataHeimdall, you accept and agree to be bound by these
             Terms of Service. If you do not agree to these terms, please do not use the
             site.
           </p>
@@ -20,7 +20,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-white mb-3">Nature of the Service</h2>
           <p>
-            [SITE NAME] aggregates and displays publicly available financial disclosure
+            DataHeimdall aggregates and displays publicly available financial disclosure
             data, including:
           </p>
           <ul className="list-disc list-inside space-y-1 mt-3">
@@ -38,9 +38,9 @@ export default function TermsPage() {
           <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4 text-yellow-200/80">
             <p className="font-semibold text-yellow-200 mb-2">Important Disclaimer</p>
             <p>
-              The information provided on [SITE NAME] is for informational purposes only
+              The information provided on DataHeimdall is for informational purposes only
               and does not constitute financial, investment, legal, or tax advice.
-              [SITE NAME] is not a registered investment advisor, broker-dealer, or
+              DataHeimdall is not a registered investment advisor, broker-dealer, or
               financial institution.
             </p>
           </div>
@@ -67,7 +67,7 @@ export default function TermsPage() {
           <p>
             Any reliance you place on the information displayed on this site is strictly
             at your own risk. You assume full responsibility for any investment decisions
-            you make based on information from this site. [SITE NAME] shall not be liable
+            you make based on information from this site. DataHeimdall shall not be liable
             for any loss or damage arising from your use of, or reliance on, information
             on this site.
           </p>
@@ -77,7 +77,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-white mb-3">Intellectual Property</h2>
           <p>
             The underlying data displayed (SEC filings, congressional disclosures) is
-            public domain. The presentation, design, and software of [SITE NAME] are
+            public domain. The presentation, design, and software of DataHeimdall are
             proprietary. You may not scrape, copy, or redistribute our compiled data
             products without prior written permission.
           </p>
@@ -96,10 +96,10 @@ export default function TermsPage() {
           <p>
             Questions about these terms can be directed to{' '}
             <a
-              href="mailto:[CONTACT EMAIL]"
+              href="mailto:hello@dataheimdall.com"
               className="text-white underline underline-offset-2 hover:text-white/70 transition-colors"
             >
-              [CONTACT EMAIL]
+              hello@dataheimdall.com
             </a>
             .
           </p>

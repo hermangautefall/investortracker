@@ -11,7 +11,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-white mb-3">Overview</h2>
           <p>
-            [SITE NAME] is a read-only financial transparency platform. We do not require
+            DataHeimdall is a read-only financial transparency platform. We do not require
             user accounts, and we do not collect personal information from visitors. This
             policy explains what limited data is collected and how it is used.
           </p>
@@ -112,10 +112,10 @@ export default function PrivacyPage() {
           <p>
             Questions about this privacy policy can be directed to{' '}
             <a
-              href="mailto:[CONTACT EMAIL]"
+              href="mailto:hello@dataheimdall.com"
               className="text-white underline underline-offset-2 hover:text-white/70 transition-colors"
             >
-              [CONTACT EMAIL]
+              hello@dataheimdall.com
             </a>
             .
           </p>

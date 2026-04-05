@@ -12,7 +12,7 @@ export default function DisclaimerPage() {
           This site is not financial advice.
         </p>
         <p className="text-yellow-200/70 text-sm leading-relaxed">
-          [SITE NAME] displays public government data for informational purposes only.
+          DataHeimdall displays public government data for informational purposes only.
           Nothing on this site should be interpreted as a recommendation to buy, sell,
           or hold any security.
         </p>
@@ -26,7 +26,7 @@ export default function DisclaimerPage() {
             All information displayed on this site is sourced from public government
             records — specifically SEC EDGAR Form 4 filings and congressional disclosure
             filings under the STOCK Act. These records are freely available to any
-            member of the public. [SITE NAME] does not create, modify, or interpret this
+            member of the public. DataHeimdall does not create, modify, or interpret this
             data — we aggregate and display it.
           </p>
         </section>
@@ -34,7 +34,7 @@ export default function DisclaimerPage() {
         <section>
           <h2 className="text-lg font-semibold text-white mb-3">Not Investment Advice</h2>
           <p>
-            [SITE NAME] is not a registered investment advisor. We do not provide
+            DataHeimdall is not a registered investment advisor. We do not provide
             personalized financial advice, recommendations, or guidance. The data shown
             on this site — including insider trade histories, congressional disclosures,
             and portfolio summaries — is provided for transparency and informational
