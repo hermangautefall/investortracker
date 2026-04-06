@@ -1,5 +1,6 @@
 import '@/styles/globals.css';
 import localFont from 'next/font/local';
+import Script from 'next/script';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ClientLayout } from './ClientLayout';
@@ -70,6 +71,22 @@ export default async function RootLayout({
     <html lang="en" className={`${inter.variable} ${roboto_mono.variable} dark`}>
       <head />
       <body>
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
         <div className="flex flex-col min-h-screen bg-[#0f1117] text-white">
           <Header />
           <ClientLayout>{children}</ClientLayout>
