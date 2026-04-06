@@ -42,6 +42,16 @@ type SummaryRow = {
   last_trade: string | null
 }
 
+type SuperinvestorHolding = {
+  investor_id: string
+  investor_name: string | null
+  fund_name: string | null
+  shares: number | null
+  value_usd: number | null
+  portfolio_weight: number | null
+  quarter: string | null
+}
+
 function SummaryCard({
   title,
   summary,
@@ -53,14 +63,14 @@ function SummaryCard({
 }) {
   if (!summary) {
     return (
-      <div className="rounded-xl border border-white/8 bg-white/3 p-6">
+      <div className="rounded-xl border border-white/8 bg-white/3 p-4">
         <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">{title}</h3>
         <p className="text-sm text-white/30">{empty}</p>
       </div>
     )
   }
   return (
-    <div className="rounded-xl border border-white/8 bg-white/3 p-6">
+    <div className="rounded-xl border border-white/8 bg-white/3 p-4">
       <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4">{title}</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -136,21 +146,10 @@ export default async function TickerActivityPage({
   const insiderSummary =
     (summaryRows.find((r) => r.data_type === 'insider') as SummaryRow | undefined) ?? null
 
-  type SuperinvestorHolding = {
-    investor_id: string
-    investor_name: string | null
-    fund_name: string | null
-    shares: number | null
-    value_usd: number | null
-    portfolio_weight: number | null
-    quarter: string | null
-  }
-
   const congressTrades = (congressRes.data ?? []) as unknown as CongressTrade[]
   const insiderTrades = (insiderRes.data ?? []) as unknown as InsiderTrade[]
   const superinvestorHoldings = (superinvestorRes.data ?? []) as SuperinvestorHolding[]
 
-  // Try to get company name from either dataset
   const companyName =
     insiderTrades[0]?.company_name ?? congressTrades[0]?.company_name ?? null
 
@@ -164,177 +163,34 @@ export default async function TickerActivityPage({
         <ChevronLeft size={14} /> Insider Trades
       </Link>
 
-      {/* Ticker header */}
-      <div className="mb-8">
+      {/* 1. Header */}
+      <div className="mb-12">
         <h1 className="text-3xl font-mono font-bold text-white">{ticker}</h1>
         {companyName && <p className="mt-1 text-white/50">{companyName}</p>}
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-        <SummaryCard
-          title="Congressional Activity"
-          summary={congressSummary}
-          empty="No data yet"
-        />
-        <SummaryCard
-          title="Insider Activity"
-          summary={insiderSummary}
-          empty="No insider trades in the last 90 days"
-        />
-      </div>
-
-      {/* Trade tables — stacked on mobile, side-by-side on desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Congressional trades */}
-        <div>
-          <h2 className="text-base font-semibold text-white mb-3">
-            Congressional Trades
-            <span className="ml-2 text-xs text-white/30 font-normal">last 90 days</span>
-          </h2>
-          {congressTrades.length === 0 ? (
-            <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
-              <p className="text-sm text-white/30">
-                Congressional trade data is being sourced and will appear here shortly.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-white/8">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/8 bg-white/3">
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Politician</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Type</th>
-                    <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {congressTrades.map((trade) => (
-                    <tr key={trade.id} className="hover:bg-white/3 transition-colors">
-                      <td className="px-3 py-2.5 text-white/60 whitespace-nowrap">
-                        {formatDate(trade.trade_date)}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {trade.politicians ? (
-                          <Link
-                            href={`/politicians/${trade.politicians.id}`}
-                            className="flex items-center gap-2 hover:text-white/70 transition-colors"
-                          >
-                            <PartyBadge party={trade.politicians.party} />
-                            <span className="text-white text-xs">
-                              {trade.politicians.full_name}
-                            </span>
-                          </Link>
-                        ) : (
-                          <span className="text-white/40">–</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <TradeBadge type={trade.trade_type} />
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-white/60 text-xs tabular-nums">
-                        {formatAmountRange(trade.amount_min, trade.amount_max)}
-                        {trade.filing_url && (
-                          <a
-                            href={trade.filing_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-1.5 inline-flex text-white/25 hover:text-white/60 transition-colors"
-                          >
-                            <ExternalLink size={11} />
-                          </a>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Insider trades */}
-        <div>
-          <h2 className="text-base font-semibold text-white mb-3">
-            Insider Trades
-            <span className="ml-2 text-xs text-white/30 font-normal">last 90 days</span>
-          </h2>
-          {insiderTrades.length === 0 ? (
-            <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
-              <p className="text-sm text-white/30">No insider trades in the last 90 days.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-white/8">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/8 bg-white/3">
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Insider</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Type</th>
-                    <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Value</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {insiderTrades.map((trade) => (
-                    <tr key={trade.id} className="hover:bg-white/3 transition-colors">
-                      <td className="px-3 py-2.5 text-white/60 whitespace-nowrap">
-                        {formatDate(trade.trade_date)}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {trade.insiders ? (
-                          <Link
-                            href={`/insiders/${trade.insiders.id}`}
-                            className="text-white hover:text-white/70 transition-colors text-xs"
-                          >
-                            {trade.insiders.name ?? '–'}
-                          </Link>
-                        ) : (
-                          <span className="text-white/40">–</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <TradeBadge type={trade.trade_type} />
-                      </td>
-                      <td className="px-3 py-2.5 text-right font-medium text-white tabular-nums">
-                        {formatValue(trade.total_value)}
-                        {trade.form4_url && (
-                          <a
-                            href={trade.form4_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-1.5 inline-flex text-white/25 hover:text-white/60 transition-colors"
-                          >
-                            <ExternalLink size={11} />
-                          </a>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Super Investor Holdings */}
-      {superinvestorHoldings.length > 0 && (
-        <div className="mt-10">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-white">
-              Superinvestor Holdings
-              <span className="ml-2 text-xs text-white/30 font-normal">
-                {superinvestorHoldings.length} investors
-              </span>
-            </h2>
-            <Link
-              href="/superinvestor-consensus"
-              className="text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              Consensus →
-            </Link>
+      {/* 2. Superinvestors section — always shown */}
+      <div className="mb-12">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-base font-semibold text-white">Superinvestors</h2>
+            <p className="text-xs text-white/40 mt-0.5">Institutional investors holding {ticker}</p>
           </div>
+          <Link
+            href="/superinvestor-consensus"
+            className="text-xs text-white/40 hover:text-white/70 transition-colors"
+          >
+            Consensus →
+          </Link>
+        </div>
+
+        {superinvestorHoldings.length === 0 ? (
+          <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
+            <p className="text-sm text-white/30">
+              No tracked superinvestors currently hold {ticker}
+            </p>
+          </div>
+        ) : (
           <div className="overflow-x-auto rounded-xl border border-white/8">
             <table className="w-full text-sm">
               <thead>
@@ -343,6 +199,7 @@ export default async function TickerActivityPage({
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Fund</th>
                   <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Weight</th>
                   <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40 hidden md:table-cell">Shares</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40 hidden lg:table-cell">Value</th>
                   <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Quarter</th>
                 </tr>
               </thead>
@@ -352,7 +209,7 @@ export default async function TickerActivityPage({
                     <td className="px-3 py-2.5">
                       <Link
                         href={`/superinvestors/${h.investor_id}`}
-                        className="text-white hover:text-white/70 transition-colors text-xs"
+                        className="text-violet-400 hover:text-violet-300 transition-colors text-xs font-medium"
                       >
                         {h.investor_name ?? '–'}
                       </Link>
@@ -368,6 +225,9 @@ export default async function TickerActivityPage({
                     <td className="px-3 py-2.5 text-right text-white/50 tabular-nums text-xs hidden md:table-cell">
                       {formatShares(h.shares)}
                     </td>
+                    <td className="px-3 py-2.5 text-right text-white/50 tabular-nums text-xs hidden lg:table-cell">
+                      {formatValue(h.value_usd)}
+                    </td>
                     <td className="px-3 py-2.5 text-right text-white/30 text-xs">
                       {h.quarter ?? '–'}
                     </td>
@@ -376,8 +236,151 @@ export default async function TickerActivityPage({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* 3. Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
+        <SummaryCard
+          title="Congressional Activity"
+          summary={congressSummary}
+          empty="Congressional data coming soon"
+        />
+        <SummaryCard
+          title="Insider Activity"
+          summary={insiderSummary}
+          empty="No insider trades in the last 90 days"
+        />
+      </div>
+
+      {/* 4. Insider trades */}
+      <div className="mb-12">
+        <h2 className="text-base font-semibold text-white mb-4">
+          Insider Trades
+          <span className="ml-2 text-xs text-white/30 font-normal">last 90 days</span>
+        </h2>
+        {insiderTrades.length === 0 ? (
+          <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
+            <p className="text-sm text-white/30">No insider trades in the last 90 days.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-white/8">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/8 bg-white/3">
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Insider</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Type</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Value</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {insiderTrades.map((trade) => (
+                  <tr key={trade.id} className="hover:bg-white/3 transition-colors">
+                    <td className="px-3 py-2.5 text-white/60 whitespace-nowrap text-xs">
+                      {formatDate(trade.trade_date)}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {trade.insiders ? (
+                        <Link
+                          href={`/insiders/${trade.insiders.id}`}
+                          className="text-white hover:text-white/70 transition-colors text-xs"
+                        >
+                          {trade.insiders.name ?? '–'}
+                        </Link>
+                      ) : (
+                        <span className="text-white/40 text-xs">–</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <TradeBadge type={trade.trade_type} />
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-medium text-white tabular-nums text-xs">
+                      {formatValue(trade.total_value)}
+                      {trade.form4_url && (
+                        <a
+                          href={trade.form4_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-1.5 inline-flex text-white/25 hover:text-white/60 transition-colors"
+                        >
+                          <ExternalLink size={11} />
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* 5. Congressional trades */}
+      <div className="mb-12">
+        <h2 className="text-base font-semibold text-white mb-4">
+          Congressional Trades
+          <span className="ml-2 text-xs text-white/30 font-normal">last 90 days</span>
+        </h2>
+        {congressTrades.length === 0 ? (
+          <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
+            <p className="text-sm text-white/30">
+              Congressional trade data is being sourced and will appear here shortly.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-white/8">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/8 bg-white/3">
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Politician</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Type</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {congressTrades.map((trade) => (
+                  <tr key={trade.id} className="hover:bg-white/3 transition-colors">
+                    <td className="px-3 py-2.5 text-white/60 whitespace-nowrap text-xs">
+                      {formatDate(trade.trade_date)}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {trade.politicians ? (
+                        <Link
+                          href={`/politicians/${trade.politicians.id}`}
+                          className="flex items-center gap-2 hover:text-white/70 transition-colors"
+                        >
+                          <PartyBadge party={trade.politicians.party} />
+                          <span className="text-white text-xs">{trade.politicians.full_name}</span>
+                        </Link>
+                      ) : (
+                        <span className="text-white/40 text-xs">–</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <TradeBadge type={trade.trade_type} />
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-white/60 text-xs tabular-nums">
+                      {formatAmountRange(trade.amount_min, trade.amount_max)}
+                      {trade.filing_url && (
+                        <a
+                          href={trade.filing_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-1.5 inline-flex text-white/25 hover:text-white/60 transition-colors"
+                        >
+                          <ExternalLink size={11} />
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </main>
   )
 }
