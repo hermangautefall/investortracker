@@ -1,25 +1,61 @@
 import Link from 'next/link'
-import { getAllPostMetas } from '@/lib/blog'
+import { getAllPostMetas, CATEGORY_LABELS, type Category } from '@/lib/blog'
 import { formatDate } from '@/lib/formatters'
+import type { Metadata } from 'next'
 
 export const revalidate = 3600
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Blog – DataHeimdall',
-  description: 'Insights on value investing, superinvestor portfolios, and financial transparency data.',
+  description:
+    'Insights on value investing, superinvestor portfolios, insider trading signals, and financial transparency data.',
   alternates: { canonical: 'https://dataheimdall.com/blog' },
 }
 
-export default function BlogPage() {
-  const posts = getAllPostMetas()
+const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[]
+
+export default function BlogPage({
+  searchParams,
+}: {
+  searchParams: { category?: string }
+}) {
+  const active = (searchParams.category ?? 'all') as Category
+  const allPosts = getAllPostMetas()
+  const posts =
+    active === 'all' || !CATEGORY_LABELS[active]
+      ? allPosts
+      : allPosts.filter((p) => p.category === active)
 
   return (
     <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold text-white mb-2">Blog</h1>
-      <p className="text-sm text-white/40 mb-10">Updates, insights, and announcements.</p>
+      <p className="text-sm text-white/40 mb-8">
+        Updates, insights, and guides on insider trading, superinvestors, and
+        congressional disclosures.
+      </p>
+
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-2 mb-10">
+        {CATEGORIES.map((cat) => {
+          const isActive = cat === active || (cat === 'all' && !CATEGORY_LABELS[active])
+          return (
+            <Link
+              key={cat}
+              href={cat === 'all' ? '/blog' : `/blog?category=${cat}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                isActive
+                  ? 'bg-violet-600 text-white'
+                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'
+              }`}
+            >
+              {CATEGORY_LABELS[cat]}
+            </Link>
+          )
+        })}
+      </div>
 
       {posts.length === 0 ? (
-        <p className="text-white/40 text-sm">No posts yet.</p>
+        <p className="text-white/40 text-sm">No posts in this category yet.</p>
       ) : (
         <div className="space-y-6">
           {posts.map((post) => (
@@ -27,15 +63,24 @@ export default function BlogPage() {
               key={post.slug}
               className="rounded-xl border border-white/8 bg-white/3 p-6 hover:border-white/15 transition-colors"
             >
-              <Link href={`/blog/${post.slug}`} className="group">
-                <h2 className="text-lg font-semibold text-white group-hover:text-white/80 transition-colors mb-1">
+              <Link href={`/blog/${post.slug}`} className="group block">
+                {/* Category tag */}
+                {post.category && (
+                  <span className="inline-block mb-2 text-[10px] font-semibold uppercase tracking-wider text-violet-400">
+                    {CATEGORY_LABELS[post.category] ?? post.category}
+                  </span>
+                )}
+
+                <h2 className="text-lg font-semibold text-white group-hover:text-white/80 transition-colors mb-1 leading-snug">
                   {post.title}
                 </h2>
+
                 {post.description && (
                   <p className="text-sm text-white/50 mb-3 leading-relaxed">
                     {post.description}
                   </p>
                 )}
+
                 <div className="flex items-center gap-3 text-xs text-white/30">
                   {post.date && <span>{formatDate(post.date)}</span>}
                   {post.author && (
@@ -44,6 +89,8 @@ export default function BlogPage() {
                       <span>{post.author}</span>
                     </>
                   )}
+                  <span>·</span>
+                  <span>{post.readingTime}</span>
                 </div>
               </Link>
             </article>
