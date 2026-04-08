@@ -6,6 +6,7 @@ import { ChevronLeft, ExternalLink } from 'lucide-react'
 import { formatQuarter } from '../page'
 import { DonutChart } from '@/components/charts/DonutChart'
 import { PortfolioValueChart } from '@/components/charts/PortfolioValueChart'
+import { QuarterSelect } from '@/components/ui/QuarterSelect'
 import type { DonutSlice } from '@/components/charts/DonutChart'
 import type { QuarterPoint } from '@/components/charts/PortfolioValueChart'
 
@@ -421,25 +422,12 @@ export default async function SuperInvestorProfilePage({
           ))}
         </div>
 
-        {quarters.length > 1 && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/30">Quarter:</span>
-            <div className="flex items-center gap-1 flex-wrap">
-              {quarters.map((q) => (
-                <Link
-                  key={q}
-                  href={quarterUrl(q)}
-                  className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                    q === selectedQuarter
-                      ? 'bg-white/15 text-white font-medium'
-                      : 'text-white/40 hover:text-white/60'
-                  }`}
-                >
-                  {formatQuarter(q)}
-                </Link>
-              ))}
-            </div>
-          </div>
+        {quarters.length > 1 && selectedQuarter && (
+          <QuarterSelect
+            quarters={quarters}
+            selected={selectedQuarter}
+            buildUrl={(q) => quarterUrl(q)}
+          />
         )}
       </div>
 

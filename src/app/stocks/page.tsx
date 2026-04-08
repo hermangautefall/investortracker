@@ -3,7 +3,7 @@ import { getStocksIndex } from '@/lib/stocks'
 import { formatValue } from '@/lib/formatters'
 import type { Metadata } from 'next'
 
-export const revalidate = 86400
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Stock Tracker — Insider Trades & Superinvestor Holdings | DataHeimdall',

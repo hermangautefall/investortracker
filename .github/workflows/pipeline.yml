@@ -116,3 +116,17 @@ jobs:
           EDGAR_IDENTITY: ${{ secrets.EDGAR_IDENTITY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+  revalidate-frontend:
+    name: "6. Revalidate Next.js cache"
+    runs-on: ubuntu-latest
+    needs: fetch-superinvestors
+    if: always()
+    steps:
+      - name: Trigger Next.js revalidation
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.REVALIDATE_SECRET }}" \
+            -H "Content-Type: application/json" \
+            "https://${{ secrets.VERCEL_DOMAIN }}/api/revalidate"
+        continue-on-error: true

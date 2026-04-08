@@ -8,7 +8,7 @@ import { formatDate, formatValue, formatShares, formatAmountRange } from '@/lib/
 import type { Metadata } from 'next'
 import type { SuperinvestorHolder, InsiderTradeRow, CongressTradeRow } from '@/lib/stocks'
 
-export const revalidate = 86400
+export const revalidate = 3600
 
 // ---------------------------------------------------------------------------
 // Metadata & static params
