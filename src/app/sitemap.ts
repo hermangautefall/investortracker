@@ -1,22 +1,25 @@
 import type { MetadataRoute } from 'next'
 import { getAdminClient } from '@/lib/supabase-admin'
 import { getAllPostMetas } from '@/lib/blog'
+import { getAllStockTickers } from '@/lib/stocks'
 
 const BASE_URL = 'https://dataheimdall.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = getAdminClient()
 
-  const [investorsRes, insidersRes, tickersRes] = await Promise.all([
+  const [investorsRes, insidersRes, tickersRes, allStockTickers] = await Promise.all([
     supabase.from('superinvestors').select('id'),
     supabase.from('insiders').select('id'),
     supabase.from('ticker_activity_summary').select('ticker'),
+    getAllStockTickers(),
   ])
 
   const posts = getAllPostMetas()
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`,                         lastModified: new Date(), changeFrequency: 'daily',   priority: 1.0 },
+    { url: `${BASE_URL}/stocks`,                   lastModified: new Date(), changeFrequency: 'daily',   priority: 0.8 },
     { url: `${BASE_URL}/insiders`,                  lastModified: new Date(), changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE_URL}/superinvestors`,            lastModified: new Date(), changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE_URL}/grand-portfolio`,           lastModified: new Date(), changeFrequency: 'daily',   priority: 0.8 },
@@ -54,5 +57,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }))
 
-  return [...staticRoutes, ...investorRoutes, ...insiderRoutes, ...tickerRoutes, ...blogRoutes]
+  const stockRoutes: MetadataRoute.Sitemap = allStockTickers.map((ticker) => ({
+    url: `${BASE_URL}/stocks/${ticker}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticRoutes, ...investorRoutes, ...insiderRoutes, ...tickerRoutes, ...blogRoutes, ...stockRoutes]
 }
