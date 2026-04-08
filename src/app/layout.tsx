@@ -59,7 +59,28 @@ export const metadata = {
     default: 'DataHeimdall',
     template: '%s | DataHeimdall',
   },
-  description: 'DataHeimdall tracks SEC insider trades and superinvestor 13F portfolios — organized, searchable, and updated daily.',
+  description:
+    'Track superinvestor portfolios, SEC Form 4 insider trades, and congressional stock disclosures. Real-time financial transparency data.',
+  keywords: [
+    'insider trading',
+    'superinvestors',
+    '13F filings',
+    'SEC Form 4',
+    'stock disclosure',
+    'Warren Buffett portfolio',
+    'congressional trades',
+    'value investing',
+  ],
+  metadataBase: new URL('https://dataheimdall.com'),
+  openGraph: {
+    type: 'website',
+    siteName: 'DataHeimdall',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@dataheimdall',
+  },
 };
 
 export default async function RootLayout({
@@ -71,6 +92,23 @@ export default async function RootLayout({
     <html lang="en" className={`${inter.variable} ${roboto_mono.variable} dark`}>
       <head />
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'DataHeimdall',
+              url: 'https://dataheimdall.com',
+              description: 'Track superinvestor portfolios and SEC insider trades',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://dataheimdall.com/insiders?q={search_term_string}',
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
         {process.env.NEXT_PUBLIC_GA_ID && (
           <>
             <Script

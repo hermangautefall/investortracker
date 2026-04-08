@@ -72,9 +72,14 @@ export function SuperinvestorTable({ investors }: { investors: InvestorRow[] }) 
 
   function Th({ col, label, align = 'left', className = '' }: ThProps) {
     const active = sortKey === col
+    const ariaSort: 'ascending' | 'descending' | 'none' = active
+      ? sortDir === 'asc' ? 'ascending' : 'descending'
+      : 'none'
     const arrow = active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕'
     return (
       <th
+        scope="col"
+        aria-sort={ariaSort}
         className={`px-4 py-2.5 text-xs font-medium uppercase tracking-wide cursor-pointer select-none transition-colors
           ${align === 'right' ? 'text-right' : 'text-left'}
           ${active ? 'text-violet-400' : 'text-white/40 hover:text-violet-300'}
@@ -94,8 +99,10 @@ export function SuperinvestorTable({ investors }: { investors: InvestorRow[] }) 
           <tr className="border-b border-white/8 bg-white/3">
             <Th col="name" label="Superinvestor" />
             <Th col="total_aum_usd" label="Portfolio" align="right" />
+            {/* Stocks: hidden on mobile (< sm), shown sm+ */}
             <Th col="holdings_count" label="Stocks" align="right" className="hidden sm:table-cell" />
-            <Th col="latest_filing_date" label="Last Updated" align="right" />
+            {/* Last Updated: hidden on mobile, shown md+ */}
+            <Th col="latest_filing_date" label="Last Updated" align="right" className="hidden md:table-cell" />
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
@@ -132,7 +139,7 @@ export function SuperinvestorTable({ investors }: { investors: InvestorRow[] }) 
                 <td className="px-4 py-2.5 text-right tabular-nums text-white/60 hidden sm:table-cell">
                   {inv.holdings_count > 0 ? inv.holdings_count : '–'}
                 </td>
-                <td className="px-4 py-2.5 text-right text-white/40 text-xs whitespace-nowrap">
+                <td className="px-4 py-2.5 text-right text-white/40 text-xs whitespace-nowrap hidden md:table-cell">
                   {formatFilingDate(inv.latest_filing_date)}
                 </td>
               </tr>

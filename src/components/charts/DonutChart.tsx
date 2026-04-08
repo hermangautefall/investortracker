@@ -22,7 +22,7 @@ export type DonutSlice = {
   name: string
   ticker: string | null
   value: number       // percentage
-  rawValue?: number   // dollar value (optional, shown in center tooltip)
+  rawValue?: number   // dollar value (optional)
 }
 
 type ActiveShapeProps = {
@@ -67,40 +67,10 @@ export function DonutChart({ data }: { data: DonutSlice[] }) {
   const active = activeIndex >= 0 && activeIndex < data.length ? data[activeIndex] : null
 
   return (
-    <div className="flex gap-3 items-center" style={{ minHeight: 240 }}>
-      {/* Legend — left side */}
-      <div className="flex flex-col gap-0.5 shrink-0" style={{ minWidth: 80, maxWidth: 100 }}>
-        {data.map((entry, i) => {
-          const color = getColor(i, entry.name)
-          const isActive = activeIndex === i
-          return (
-            <div
-              key={i}
-              className="flex items-center gap-1.5 cursor-pointer px-1 py-0.5 rounded transition-colors hover:bg-white/5"
-              onMouseEnter={() => setActiveIndex(i)}
-              onMouseLeave={() => setActiveIndex(-1)}
-              onClick={() => setActiveIndex(isActive ? -1 : i)}
-            >
-              <span
-                className="shrink-0 rounded-full"
-                style={{ background: color, width: 6, height: 6 }}
-              />
-              <span
-                className="text-[10px] leading-tight truncate transition-all duration-100"
-                style={{
-                  color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
-                  fontWeight: isActive ? 700 : 400,
-                }}
-              >
-                {entry.ticker ?? entry.name}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Chart area */}
-      <div className="relative flex-1" style={{ height: 240 }}>
+    // Mobile: column (chart on top, legend below). sm+: row (legend left, chart right)
+    <div className="flex flex-col sm:flex-row gap-3 items-center">
+      {/* Chart — order-1 on mobile (top), order-2 on sm+ (right) */}
+      <div className="relative order-1 sm:order-2 flex-1 w-full" style={{ height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -152,6 +122,40 @@ export function DonutChart({ data }: { data: DonutSlice[] }) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Legend — order-2 on mobile (below), order-1 on sm+ (left) */}
+      <div
+        className="flex flex-row flex-wrap sm:flex-col gap-1 sm:gap-0.5 order-2 sm:order-1 shrink-0 justify-center sm:justify-start"
+        style={{ maxWidth: 120 }}
+      >
+        {data.map((entry, i) => {
+          const color = getColor(i, entry.name)
+          const isActive = activeIndex === i
+          return (
+            <div
+              key={i}
+              className="flex items-center gap-1.5 cursor-pointer px-1 py-0.5 rounded transition-colors hover:bg-white/5 min-h-[28px]"
+              onMouseEnter={() => setActiveIndex(i)}
+              onMouseLeave={() => setActiveIndex(-1)}
+              onClick={() => setActiveIndex(isActive ? -1 : i)}
+            >
+              <span
+                className="shrink-0 rounded-full"
+                style={{ background: color, width: 6, height: 6 }}
+              />
+              <span
+                className="text-[10px] leading-tight truncate transition-all duration-100"
+                style={{
+                  color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
+                  fontWeight: isActive ? 700 : 400,
+                }}
+              >
+                {entry.ticker ?? entry.name}
+              </span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

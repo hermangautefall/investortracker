@@ -12,6 +12,13 @@ import type {
 
 export const revalidate = 300
 
+export const metadata = {
+  title: 'DataHeimdall – Track Smart Money Trades',
+  description:
+    'Follow superinvestor 13F portfolios and SEC insider trades in real time. See what Warren Buffett, Bill Ackman, and other value investors are buying.',
+  alternates: { canonical: 'https://dataheimdall.com/' },
+}
+
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
 function formatValuePlus(v: number): string {
@@ -255,10 +262,10 @@ export default async function HomePage() {
                     <th className="px-5 py-3.5 text-left text-xs font-medium text-white/40 uppercase tracking-wide">
                       Superinvestor
                     </th>
-                    <th className="px-5 py-3.5 text-right text-xs font-medium text-white/40 uppercase tracking-wide">
+                    <th className="px-5 py-3.5 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">
                       Portfolio
                     </th>
-                    <th className="px-5 py-3.5 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">
+                    <th className="px-5 py-3.5 text-right text-xs font-medium text-white/40 uppercase tracking-wide">
                       Stocks
                     </th>
                     <th className="px-5 py-3.5 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden md:table-cell">
@@ -280,10 +287,10 @@ export default async function HomePage() {
                           )}
                         </Link>
                       </td>
-                      <td className="px-5 py-3.5 text-right tabular-nums font-semibold text-white">
+                      <td className="px-5 py-3.5 text-right tabular-nums font-semibold text-white hidden sm:table-cell">
                         {si.total_aum_usd > 0 ? formatValuePlus(si.total_aum_usd) : '–'}
                       </td>
-                      <td className="px-5 py-3.5 text-right tabular-nums text-white/60 hidden sm:table-cell">
+                      <td className="px-5 py-3.5 text-right tabular-nums text-white/60">
                         {si.holdings_count > 0 ? si.holdings_count : '–'}
                       </td>
                       <td className="px-5 py-3.5 text-right text-white/40 text-xs hidden md:table-cell whitespace-nowrap">

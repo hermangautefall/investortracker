@@ -7,6 +7,17 @@ import { ChevronLeft } from 'lucide-react'
 
 export const revalidate = 3600
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const post = getPost(slug)
+  if (!post) return { title: 'Blog Post' }
+  return {
+    title: post.title,
+    description: post.description || undefined,
+    alternates: { canonical: `https://dataheimdall.com/blog/${slug}` },
+  }
+}
+
 export async function generateStaticParams() {
   return getAllPostMetas().map((post) => ({ slug: post.slug }))
 }

@@ -7,6 +7,18 @@ import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export const revalidate = 60
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = (await import('@/lib/supabase-admin')).getAdminClient()
+  const { data } = await supabase.from('insiders').select('name').eq('id', id).maybeSingle()
+  const name = data?.name ?? 'Insider'
+  return {
+    title: `${name} – Insider Trading Activity`,
+    description: `SEC Form 4 trading history for ${name}. View all reported insider trades and activity.`,
+    alternates: { canonical: `https://dataheimdall.com/insiders/${id}` },
+  }
+}
+
 const PAGE_SIZE = 50
 
 type Trade = {
@@ -124,8 +136,8 @@ export default async function InsiderProfilePage({
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Stock</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Type</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Shares</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Value</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Shares</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Value</th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-white/40 uppercase tracking-wide w-10">Src</th>
                 </tr>
               </thead>
@@ -150,10 +162,10 @@ export default async function InsiderProfilePage({
                     <td className="px-4 py-3">
                       <TradeBadge type={trade.trade_type} />
                     </td>
-                    <td className="px-4 py-3 text-right text-white/60 tabular-nums">
+                    <td className="px-4 py-3 text-right text-white/60 tabular-nums hidden sm:table-cell">
                       {formatShares(trade.shares)}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-white tabular-nums">
+                    <td className="px-4 py-3 text-right font-medium text-white tabular-nums hidden sm:table-cell">
                       {formatValue(trade.total_value)}
                     </td>
                     <td className="px-4 py-3 text-center">

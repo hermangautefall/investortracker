@@ -7,6 +7,13 @@ import type { Source } from '@/components/ui/DataSourceSwitch'
 
 export const revalidate = 300
 
+export const metadata = {
+  title: 'Grand Portfolio – Most Held Stocks',
+  description:
+    'Discover the most widely held stocks across all tracked superinvestors and insiders. Filter by buys, sells, and time periods.',
+  alternates: { canonical: 'https://dataheimdall.com/grand-portfolio' },
+}
+
 const PAGE_SIZE = 50
 
 // ─── View config (insiders only) ─────────────────────────────────────────────
@@ -425,15 +432,17 @@ export default async function GrandPortfolioPage({
         <p className="mt-1 text-sm text-white/40">{SOURCE_LABELS[source]}</p>
       </div>
 
-      {/* Data source switch */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <DataSourceSwitch value={source} urls={switchUrls} />
+      {/* Data source switch — full width on mobile */}
+      <div className="mb-5">
+        <div className="w-full sm:w-auto">
+          <DataSourceSwitch value={source} urls={switchUrls} />
+        </div>
       </div>
 
       {/* View tabs — insiders only */}
       {source === 'insiders' && (
         <div className="mb-5 border-b border-white/8">
-          <nav className="flex gap-0 -mb-px flex-wrap">
+          <nav className="flex gap-0 -mb-px overflow-x-auto">
             {(VALID_VIEWS as readonly ViewId[]).map((v) => {
               const active = v === view
               return (
@@ -540,11 +549,11 @@ export default async function GrandPortfolioPage({
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Company</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">{headerLabel}</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Trades</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Price</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-white/40 uppercase tracking-wide w-24">
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Price</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-white/40 uppercase tracking-wide w-24 hidden sm:table-cell">
                     {meta.isSell ? 'Activity' : 'Bias'}
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden lg:table-cell">
                     Last Trade
                   </th>
                 </tr>
@@ -567,10 +576,10 @@ export default async function GrandPortfolioPage({
                         <span className="font-bold text-white">{row.ownership_count}</span>
                       </td>
                       <td className="px-4 py-3 text-right text-white/60 tabular-nums">{row.total_trades}</td>
-                      <td className="px-4 py-3 text-right text-white/60 tabular-nums font-mono">
+                      <td className="px-4 py-3 text-right text-white/60 tabular-nums font-mono hidden sm:table-cell">
                         {row.close_price != null ? `$${row.close_price.toFixed(2)}` : '–'}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center hidden sm:table-cell">
                         {showBuyBias ? (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-green-400">
                             ▲ <span className="hidden sm:inline">Buy bias</span>
@@ -583,7 +592,7 @@ export default async function GrandPortfolioPage({
                           <span className="text-white/30 text-xs">–</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right text-white/40 text-xs hidden sm:table-cell whitespace-nowrap">
+                      <td className="px-4 py-3 text-right text-white/40 text-xs hidden lg:table-cell whitespace-nowrap">
                         {formatDate(row.last_trade_date)}
                       </td>
                     </tr>
@@ -605,8 +614,8 @@ export default async function GrandPortfolioPage({
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Symbol</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Company</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">{headerLabel}</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Total Value</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Price</th>
+                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Total Value</th>
+                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Price</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -622,10 +631,10 @@ export default async function GrandPortfolioPage({
                   <td className="px-4 py-3 text-right tabular-nums">
                     <span className="font-bold text-white">{row.investor_count}</span>
                   </td>
-                  <td className="px-4 py-3 text-right text-white/60 tabular-nums">
+                  <td className="px-4 py-3 text-right text-white/60 tabular-nums hidden sm:table-cell">
                     {formatValue(row.total_value)}
                   </td>
-                  <td className="px-4 py-3 text-right text-white/60 tabular-nums font-mono">
+                  <td className="px-4 py-3 text-right text-white/60 tabular-nums font-mono hidden sm:table-cell">
                     {row.close_price != null ? `$${row.close_price.toFixed(2)}` : '–'}
                   </td>
                 </tr>
@@ -645,9 +654,9 @@ export default async function GrandPortfolioPage({
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Symbol</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Company</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">{headerLabel}</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Insiders</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">SI</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide">Price</th>
+                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Insiders</th>
+                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">SI</th>
+                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase tracking-wide hidden sm:table-cell">Price</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -665,7 +674,7 @@ export default async function GrandPortfolioPage({
                   </td>
                   <td className="px-4 py-3 text-right text-white/40 tabular-nums text-xs hidden sm:table-cell">{row.insider_count}</td>
                   <td className="px-4 py-3 text-right text-white/40 tabular-nums text-xs hidden sm:table-cell">{row.investor_count}</td>
-                  <td className="px-4 py-3 text-right text-white/60 tabular-nums font-mono">
+                  <td className="px-4 py-3 text-right text-white/60 tabular-nums font-mono hidden sm:table-cell">
                     {row.close_price != null ? `$${row.close_price.toFixed(2)}` : '–'}
                   </td>
                 </tr>

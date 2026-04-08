@@ -7,6 +7,16 @@ import { ExternalLink, ChevronLeft } from 'lucide-react'
 
 export const revalidate = 60
 
+export async function generateMetadata({ params }: { params: Promise<{ ticker: string }> }) {
+  const { ticker: rawTicker } = await params
+  const ticker = rawTicker.toUpperCase()
+  return {
+    title: `${ticker} – Superinvestor and Insider Activity`,
+    description: `See which superinvestors hold ${ticker} and recent SEC Form 4 insider trades. Portfolio weights, share counts, and trade history.`,
+    alternates: { canonical: `https://dataheimdall.com/tickers/${ticker}` },
+  }
+}
+
 const LOOKBACK_DAYS = 90
 
 type InsiderTrade = {

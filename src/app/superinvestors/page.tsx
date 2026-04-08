@@ -7,6 +7,13 @@ import type { MostOwnedRow, BiggestRow, ActivityRow } from '@/lib/homepage-data'
 
 export const revalidate = 300
 
+export const metadata = {
+  title: 'Superinvestors – Value Investing Portfolios',
+  description:
+    'Browse 13F portfolio holdings of 84 tracked superinvestors including Warren Buffett, Seth Klarman, Bill Ackman and more.',
+  alternates: { canonical: 'https://dataheimdall.com/superinvestors' },
+}
+
 // ─── formatQuarter still exported (used by profile page) ──────────────────────
 export function formatQuarter(q: string | null): string {
   if (!q) return '–'

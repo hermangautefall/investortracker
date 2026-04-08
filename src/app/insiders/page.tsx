@@ -8,6 +8,13 @@ import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export const revalidate = 60
 
+export const metadata = {
+  title: 'Insider Trades – SEC Form 4 Disclosures',
+  description:
+    'Search and filter SEC Form 4 insider trade filings. Track what executives and directors are buying and selling in their own companies.',
+  alternates: { canonical: 'https://dataheimdall.com/insiders' },
+}
+
 const PAGE_SIZE = 50
 
 type InsiderTrade = {
@@ -204,12 +211,15 @@ export default async function InsidersPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/8 bg-white/3">
-                  {['Date', 'Insider', 'Stock', 'Type', 'Shares', 'Value', 'Src'].map((h, i) => (
+                  {(['Date', 'Insider', 'Stock', 'Type', 'Shares', 'Value', 'Src'] as const).map((h, i) => (
                     <th
                       key={h}
+                      scope="col"
                       className={`px-4 py-3 text-xs font-medium text-white/40 uppercase tracking-wide ${
                         i >= 4 ? 'text-right' : 'text-left'
-                      } ${h === 'Src' ? 'text-center w-10' : ''}`}
+                      } ${h === 'Src' ? 'text-center w-10' : ''} ${
+                        h === 'Shares' || h === 'Value' ? 'hidden sm:table-cell' : ''
+                      }`}
                     >
                       {h}
                     </th>
@@ -249,10 +259,10 @@ export default async function InsidersPage({
                     <td className="px-4 py-3">
                       <TradeBadge type={trade.trade_type} />
                     </td>
-                    <td className="px-4 py-3 text-right text-white/60 tabular-nums">
+                    <td className="px-4 py-3 text-right text-white/60 tabular-nums hidden sm:table-cell">
                       {formatShares(trade.shares)}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-white tabular-nums">
+                    <td className="px-4 py-3 text-right font-medium text-white tabular-nums hidden sm:table-cell">
                       {formatValue(trade.total_value)}
                     </td>
                     <td className="px-4 py-3 text-center">

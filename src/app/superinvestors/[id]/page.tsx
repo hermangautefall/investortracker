@@ -11,6 +11,21 @@ import type { QuarterPoint } from '@/components/charts/PortfolioValueChart'
 
 export const revalidate = 300
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = (await import('@/lib/supabase-admin')).getAdminClient()
+  const { data } = await supabase.from('superinvestors').select('name, fund_name').eq('id', id).maybeSingle()
+  if (!data) return { title: 'Superinvestor Profile' }
+  const title = data.fund_name
+    ? `${data.name} – ${data.fund_name} Portfolio`
+    : `${data.name} – Portfolio`
+  return {
+    title,
+    description: `View ${data.name}'s latest 13F portfolio holdings, quarterly changes, and top positions tracked by DataHeimdall.`,
+    alternates: { canonical: `https://dataheimdall.com/superinvestors/${id}` },
+  }
+}
+
 type Holding = {
   ticker: string | null
   company_name: string | null
@@ -391,7 +406,7 @@ export default async function SuperInvestorProfilePage({
       )}
 
       {/* Tab strip + quarter picker */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-5 gap-3 overflow-x-auto pb-1">
         <div className="flex items-center gap-1 rounded-md border border-white/10 bg-white/3 p-0.5">
           {TABS.map((t) => (
             <Link
@@ -440,7 +455,7 @@ export default async function SuperInvestorProfilePage({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/8 bg-white/3">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 w-8">#</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-white/40 w-8 hidden sm:table-cell">#</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-white/40">Ticker</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-white/40 hidden md:table-cell">
                       Company
@@ -474,7 +489,7 @@ export default async function SuperInvestorProfilePage({
 
                     return (
                       <tr key={`${h.ticker}-${idx}`} className="hover:bg-white/3 transition-colors group">
-                        <td className="px-4 py-3 text-white/25 text-xs">{idx + 1}</td>
+                        <td className="px-4 py-3 text-white/25 text-xs hidden sm:table-cell">{idx + 1}</td>
                         <td className="px-4 py-3">
                           {h.ticker ? (
                             <Link
@@ -625,7 +640,7 @@ export default async function SuperInvestorProfilePage({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/8 bg-white/3">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 w-8">#</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-white/40 w-8 hidden sm:table-cell">#</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-white/40">Ticker</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-white/40 hidden sm:table-cell">
                       Company

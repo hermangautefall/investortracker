@@ -4,6 +4,12 @@ import { formatDate } from '@/lib/formatters'
 
 export const revalidate = 3600
 
+export const metadata = {
+  title: 'Blog – DataHeimdall',
+  description: 'Insights on value investing, superinvestor portfolios, and financial transparency data.',
+  alternates: { canonical: 'https://dataheimdall.com/blog' },
+}
+
 export default function BlogPage() {
   const posts = getAllPostMetas()
 
