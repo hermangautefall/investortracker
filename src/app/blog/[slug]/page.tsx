@@ -1,12 +1,19 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
-import { getAllPostMetas, getPost, CATEGORY_LABELS } from '@/lib/blog'
-import { formatDate } from '@/lib/formatters'
+import { getPostBySlug, getAllPostSlugs, getAdjacentPosts, CATEGORIES } from '@/lib/mdx'
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const revalidate = 3600
+
+// ---------------------------------------------------------------------------
+// Static params & metadata
+// ---------------------------------------------------------------------------
+
+export async function generateStaticParams() {
+  return getAllPostSlugs().map((slug) => ({ slug }))
+}
 
 export async function generateMetadata({
   params,
@@ -14,36 +21,40 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const post = getPost(slug)
+  const post = getPostBySlug(slug)
   if (!post) return { title: 'Blog – DataHeimdall' }
 
-  const url = `https://dataheimdall.com/blog/${slug}`
+  const url = `https://dataheimdall.com/blog/${post.slug}`
+  const ogUrl = `https://dataheimdall.com${post.ogImage}`
+
   return {
-    title: `${post.title} – DataHeimdall`,
+    title: `${post.title} | DataHeimdall`,
     description: post.description || undefined,
     keywords: post.keywords.length > 0 ? post.keywords : undefined,
+    authors: [{ name: post.author }],
     alternates: { canonical: url },
     openGraph: {
       title: post.title,
       description: post.description || undefined,
       url,
       type: 'article',
-      publishedTime: post.date || undefined,
-      authors: post.author ? [post.author] : undefined,
-      images: post.ogImage ? [{ url: `https://dataheimdall.com${post.ogImage}` }] : [],
+      publishedTime: post.publishedAt || undefined,
+      modifiedTime: post.updatedAt || undefined,
+      authors: [post.author],
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: post.title }],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.description || undefined,
-      images: post.ogImage ? [`https://dataheimdall.com${post.ogImage}`] : [],
+      images: [ogUrl],
     },
   }
 }
 
-export async function generateStaticParams() {
-  return getAllPostMetas().map((post) => ({ slug: post.slug }))
-}
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default async function BlogPostPage({
   params,
@@ -51,23 +62,18 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const post = getPost(slug)
+  const post = getPostBySlug(slug)
   if (!post) notFound()
 
-  // Prev / next navigation (sorted newest-first, same as listing)
-  const allPosts = getAllPostMetas()
-  const index = allPosts.findIndex((p) => p.slug === slug)
-  const prev = index < allPosts.length - 1 ? allPosts[index + 1] : null // older
-  const next = index > 0 ? allPosts[index - 1] : null                   // newer
+  const { prev, next } = getAdjacentPosts(slug)
 
-  // JSON-LD Article schema
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.title,
     description: post.description || undefined,
-    datePublished: post.date || undefined,
-    dateModified: post.date || undefined,
+    datePublished: post.publishedAt || undefined,
+    dateModified: post.updatedAt || undefined,
     author: {
       '@type': 'Organization',
       name: post.author || 'DataHeimdall',
@@ -77,48 +83,63 @@ export default async function BlogPostPage({
       name: 'DataHeimdall',
       url: 'https://dataheimdall.com',
     },
-    url: `https://dataheimdall.com/blog/${slug}`,
-    ...(post.ogImage
-      ? { image: `https://dataheimdall.com${post.ogImage}` }
-      : {}),
+    url: `https://dataheimdall.com/blog/${post.slug}`,
+    image: `https://dataheimdall.com${post.ogImage}`,
     keywords: post.keywords.join(', ') || undefined,
+    articleSection: CATEGORIES[post.category] ?? post.category,
+    inLanguage: 'en-US',
   }
 
   return (
     <>
-      {/* JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
-        {/* Back link */}
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-1 text-sm text-white/40 hover:text-white/70 transition-colors mb-8"
-        >
-          <ChevronLeft size={14} /> Back to Blog
-        </Link>
 
-        {/* Post header */}
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm text-white/30 mb-8" aria-label="Breadcrumb">
+          <Link href="/blog" className="hover:text-white/60 transition-colors">
+            Blog
+          </Link>
+          <span>›</span>
+          <span className="text-white/50">
+            {CATEGORIES[post.category] ?? post.category}
+          </span>
+        </nav>
+
+        {/* Article header */}
         <header className="mb-10">
           {/* Category */}
-          {post.category && (
-            <Link
-              href={`/blog?category=${post.category}`}
-              className="inline-block mb-3 text-[11px] font-semibold uppercase tracking-wider text-violet-400 hover:text-violet-300 transition-colors"
-            >
-              {CATEGORY_LABELS[post.category] ?? post.category}
-            </Link>
-          )}
+          <Link
+            href={`/blog?category=${post.category}`}
+            className="inline-block mb-3 text-[11px] font-semibold uppercase tracking-wider text-violet-400 hover:text-violet-300 transition-colors"
+          >
+            {CATEGORIES[post.category] ?? post.category}
+          </Link>
 
           <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
             {post.title}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/40">
-            {post.date && <span>{formatDate(post.date)}</span>}
+          {post.description && (
+            <p className="text-lg text-white/50 leading-relaxed mb-5">
+              {post.description}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/30">
+            {post.publishedAt && (
+              <time dateTime={post.publishedAt}>
+                {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </time>
+            )}
             {post.author && (
               <>
                 <span>·</span>
@@ -133,22 +154,37 @@ export default async function BlogPostPage({
           </div>
         </header>
 
-        {/* MDX content */}
-        <article className="prose prose-invert prose-sm max-w-none
-          prose-headings:text-white prose-headings:font-semibold prose-headings:mt-8 prose-headings:mb-3
-          prose-h2:text-xl prose-h3:text-base
-          prose-p:text-white/70 prose-p:leading-relaxed prose-p:my-4
-          prose-a:text-violet-400 prose-a:no-underline hover:prose-a:text-violet-300
-          prose-strong:text-white
-          prose-em:text-white/80
-          prose-li:text-white/70 prose-li:my-1
-          prose-ul:my-4 prose-ol:my-4
-          prose-hr:border-white/10 prose-hr:my-8
-          prose-code:text-white/80 prose-code:bg-white/5 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[13px] prose-code:font-normal
-          prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-lg
-          prose-blockquote:border-l-2 prose-blockquote:border-violet-500/50 prose-blockquote:text-white/50 prose-blockquote:pl-4 prose-blockquote:italic">
+        {/* Article body — wysiwyg = Tailwind v4 typography plugin classname */}
+        <article className="wysiwyg wysiwyg-invert wysiwyg-sm max-w-none
+          wysiwyg-headings:text-white wysiwyg-headings:font-semibold wysiwyg-headings:mt-8 wysiwyg-headings:mb-3
+          wysiwyg-h2:text-xl wysiwyg-h3:text-base
+          wysiwyg-p:text-white/70 wysiwyg-p:leading-relaxed wysiwyg-p:my-4
+          wysiwyg-a:text-violet-400 wysiwyg-a:no-underline hover:wysiwyg-a:text-violet-300
+          wysiwyg-strong:text-white
+          wysiwyg-em:text-white/80
+          wysiwyg-li:text-white/70 wysiwyg-li:my-1
+          wysiwyg-ul:my-4 wysiwyg-ol:my-4
+          wysiwyg-hr:border-white/10 wysiwyg-hr:my-8
+          wysiwyg-code:text-white/80 wysiwyg-code:bg-white/5 wysiwyg-code:px-1.5 wysiwyg-code:py-0.5 wysiwyg-code:rounded wysiwyg-code:text-[13px]
+          wysiwyg-pre:bg-white/5 wysiwyg-pre:border wysiwyg-pre:border-white/10 wysiwyg-pre:rounded-lg
+          wysiwyg-blockquote:border-l-2 wysiwyg-blockquote:border-violet-500/50 wysiwyg-blockquote:text-white/50 wysiwyg-blockquote:pl-4 wysiwyg-blockquote:italic
+          wysiwyg-table:text-sm wysiwyg-th:text-white/60 wysiwyg-td:text-white/50">
           <MDXRemote source={post.content} />
         </article>
+
+        {/* Last updated note */}
+        {post.updatedAt && post.updatedAt !== post.publishedAt && (
+          <p className="text-sm text-white/25 mt-8 pt-8 border-t border-white/8">
+            Last updated{' '}
+            <time dateTime={post.updatedAt}>
+              {new Date(post.updatedAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </time>
+          </p>
+        )}
 
         {/* Prev / Next navigation */}
         {(prev || next) && (
@@ -189,6 +225,17 @@ export default async function BlogPostPage({
             )}
           </nav>
         )}
+
+        {/* Back link */}
+        <div className="mt-10">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-1 text-sm text-white/30 hover:text-white/60 transition-colors"
+          >
+            <ChevronLeft size={14} /> All articles
+          </Link>
+        </div>
+
       </main>
     </>
   )

@@ -157,6 +157,7 @@
     }
   },
   "devDependencies": {
+    "@types/mdx": "^2.0.13",
     "tw-animate-css": "^1.2.5"
   }
 }

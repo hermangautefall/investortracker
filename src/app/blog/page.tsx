@@ -1,97 +1,105 @@
 import Link from 'next/link'
-import { getAllPostMetas, CATEGORY_LABELS, type Category } from '@/lib/blog'
-import { formatDate } from '@/lib/formatters'
+import { getAllPosts, CATEGORIES } from '@/lib/mdx'
 import type { Metadata } from 'next'
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Blog – DataHeimdall',
+  title: 'Blog — Insider Trading, 13F Filings & Congressional Trades | DataHeimdall',
   description:
-    'Insights on value investing, superinvestor portfolios, insider trading signals, and financial transparency data.',
+    'Guides and analysis on SEC insider trading data, superinvestor 13F filings, and congressional stock disclosures. Learn how to use public financial data in your investment research.',
   alternates: { canonical: 'https://dataheimdall.com/blog' },
+  openGraph: {
+    title: 'Blog | DataHeimdall',
+    description:
+      'Guides on insider trading, 13F filings, and congressional stock disclosures.',
+  },
 }
-
-const CATEGORIES = Object.keys(CATEGORY_LABELS) as Category[]
 
 export default function BlogPage({
   searchParams,
 }: {
   searchParams: { category?: string }
 }) {
-  const active = (searchParams.category ?? 'all') as Category
-  const allPosts = getAllPostMetas()
-  const posts =
-    active === 'all' || !CATEGORY_LABELS[active]
+  const activeCategory = searchParams.category ?? 'all'
+  const allPosts = getAllPosts()
+
+  const filtered =
+    activeCategory === 'all' || !CATEGORIES[activeCategory]
       ? allPosts
-      : allPosts.filter((p) => p.category === active)
+      : allPosts.filter((p) => p.category === activeCategory)
+
+  // Category keys excluding 'all' — only show tabs with posts
+  const categoriesWithAll = Object.keys(CATEGORIES)
 
   return (
     <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold text-white mb-2">Blog</h1>
       <p className="text-sm text-white/40 mb-8">
-        Updates, insights, and guides on insider trading, superinvestors, and
-        congressional disclosures.
+        Guides on insider trading, 13F filings, and congressional stock disclosures.
       </p>
 
-      {/* Category filter */}
+      {/* Category filter tabs */}
       <div className="flex flex-wrap gap-2 mb-10">
-        {CATEGORIES.map((cat) => {
-          const isActive = cat === active || (cat === 'all' && !CATEGORY_LABELS[active])
+        {categoriesWithAll.map((key) => {
+          const isActive = key === activeCategory || (key === 'all' && !CATEGORIES[activeCategory])
           return (
             <Link
-              key={cat}
-              href={cat === 'all' ? '/blog' : `/blog?category=${cat}`}
+              key={key}
+              href={key === 'all' ? '/blog' : `/blog?category=${key}`}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 isActive
                   ? 'bg-violet-600 text-white'
                   : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'
               }`}
             >
-              {CATEGORY_LABELS[cat]}
+              {CATEGORIES[key]}
             </Link>
           )
         })}
       </div>
 
-      {posts.length === 0 ? (
-        <p className="text-white/40 text-sm">No posts in this category yet.</p>
+      {filtered.length === 0 ? (
+        <p className="text-white/40 text-sm text-center py-16">
+          No articles in this category yet.
+        </p>
       ) : (
-        <div className="space-y-6">
-          {posts.map((post) => (
-            <article
-              key={post.slug}
-              className="rounded-xl border border-white/8 bg-white/3 p-6 hover:border-white/15 transition-colors"
-            >
-              <Link href={`/blog/${post.slug}`} className="group block">
-                {/* Category tag */}
-                {post.category && (
-                  <span className="inline-block mb-2 text-[10px] font-semibold uppercase tracking-wider text-violet-400">
-                    {CATEGORY_LABELS[post.category] ?? post.category}
-                  </span>
+        <div className="flex flex-col divide-y divide-white/8">
+          {filtered.map((post) => (
+            <article key={post.slug} className="py-8">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-400">
+                  {CATEGORIES[post.category] ?? post.category}
+                </span>
+                <span className="text-white/20">·</span>
+                <span className="text-xs text-white/30">{post.readingTime}</span>
+                <span className="text-white/20">·</span>
+                {post.publishedAt && (
+                  <time className="text-xs text-white/30" dateTime={post.publishedAt}>
+                    {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </time>
                 )}
+              </div>
 
-                <h2 className="text-lg font-semibold text-white group-hover:text-white/80 transition-colors mb-1 leading-snug">
+              <Link href={`/blog/${post.slug}`} className="group block mb-2">
+                <h2 className="text-lg font-semibold text-white group-hover:text-white/80 transition-colors leading-snug">
                   {post.title}
                 </h2>
+              </Link>
 
-                {post.description && (
-                  <p className="text-sm text-white/50 mb-3 leading-relaxed">
-                    {post.description}
-                  </p>
-                )}
+              <p className="text-sm text-white/50 leading-relaxed mb-4 max-w-2xl">
+                {post.description}
+              </p>
 
-                <div className="flex items-center gap-3 text-xs text-white/30">
-                  {post.date && <span>{formatDate(post.date)}</span>}
-                  {post.author && (
-                    <>
-                      <span>·</span>
-                      <span>{post.author}</span>
-                    </>
-                  )}
-                  <span>·</span>
-                  <span>{post.readingTime}</span>
-                </div>
+              <Link
+                href={`/blog/${post.slug}`}
+                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                Read article →
               </Link>
             </article>
           ))}

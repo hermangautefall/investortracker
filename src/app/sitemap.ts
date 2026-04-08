@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getAdminClient } from '@/lib/supabase-admin'
-import { getAllPostMetas } from '@/lib/blog'
+import { getAllPosts } from '@/lib/mdx'
 import { getAllStockTickers } from '@/lib/stocks'
 
 const BASE_URL = 'https://dataheimdall.com'
@@ -15,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getAllStockTickers(),
   ])
 
-  const posts = getAllPostMetas()
+  const posts = getAllPosts()
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`,                         lastModified: new Date(), changeFrequency: 'daily',   priority: 1.0 },
@@ -53,6 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const blogRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${BASE_URL}/blog/${post.slug}`,
+    lastModified: post.updatedAt ? new Date(post.updatedAt) : new Date(),
     changeFrequency: 'monthly',
     priority: 0.5,
   }))

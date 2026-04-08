@@ -2,6 +2,28 @@ import { NextConfig } from "next";
 
 const config: NextConfig = {
   cacheComponents: false,
+
+  async redirects() {
+    return [
+      // Blog articles link to /insider-trades; the actual page lives at /insiders
+      {
+        source: '/insider-trades',
+        destination: '/insiders',
+        permanent: true,
+      },
+    ]
+  },
+
+  async rewrites() {
+    return [
+      // Serve /og/default.png as fallback for any missing OG image
+      {
+        source: '/og/:path*',
+        destination: '/og/default.png',
+      },
+    ]
+  },
+
   images: {
     remotePatterns: [
       {
