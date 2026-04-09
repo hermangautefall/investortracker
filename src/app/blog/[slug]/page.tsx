@@ -119,11 +119,20 @@ export default async function BlogPostPage({
           </Link>
         </nav>
 
-        {/* Two-column layout: article (left/main) + TOC (right/sidebar) */}
-        <div className="flex gap-16 items-start">
+        {/* Two-column layout: TOC (left/sidebar) + article (right/main) */}
+        <div className="flex gap-12 items-start">
+
+          {/* ── TOC sidebar — left, sticky ── */}
+          <aside className="hidden xl:block w-56 shrink-0">
+            <div className="sticky top-24">
+              {headings.length > 2 && (
+                <TableOfContents headings={headings} />
+              )}
+            </div>
+          </aside>
 
           {/* ── Main column ── */}
-          <main className="min-w-0 flex-1 max-w-2xl">
+          <main className="min-w-0 w-full max-w-2xl">
 
             {/* Article header */}
             <header className="mb-12">
@@ -284,14 +293,6 @@ export default async function BlogPostPage({
             </div>
           </main>
 
-          {/* ── TOC sidebar (hidden on mobile/tablet) ── */}
-          {headings.length > 2 && (
-            <aside className="hidden xl:block w-56 shrink-0">
-              <div className="sticky top-24">
-                <TableOfContents headings={headings} />
-              </div>
-            </aside>
-          )}
         </div>
       </div>
     </>
