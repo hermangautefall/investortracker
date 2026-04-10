@@ -2,7 +2,7 @@ import { getAdminClient } from '@/lib/supabase-admin'
 import { successResponse, errorResponse } from '@/lib/api-response'
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '@/lib/constants'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)

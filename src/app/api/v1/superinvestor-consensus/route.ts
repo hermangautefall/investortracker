@@ -1,7 +1,7 @@
 import { getAdminClient } from '@/lib/supabase-admin'
 import { successResponse, errorResponse } from '@/lib/api-response'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 const DEFAULT_PAGE_SIZE = 50
 const MAX_PAGE_SIZE = 100

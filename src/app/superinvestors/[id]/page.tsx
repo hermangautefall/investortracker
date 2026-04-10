@@ -283,29 +283,33 @@ export default async function SuperInvestorProfilePage({
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 10)
 
-    const [reportedRes, currentRes] = await Promise.all([
-      supabase
-        .from('stock_prices')
-        .select('ticker, close_price, date')
-        .in('ticker', currentTickers)
-        .lte('date', quarterEndDate)
-        .gte('date', quarterStartDate)
-        .order('date', { ascending: false }),
-      supabase
-        .from('stock_prices')
-        .select('ticker, close_price, date')
-        .in('ticker', currentTickers)
-        .gte('date', thirtyDaysAgoStr)
-        .order('date', { ascending: false }),
-    ])
+    try {
+      const [reportedRes, currentRes] = await Promise.all([
+        supabase
+          .from('stock_prices')
+          .select('ticker, close_price, date')
+          .in('ticker', currentTickers)
+          .lte('date', quarterEndDate)
+          .gte('date', quarterStartDate)
+          .order('date', { ascending: false }),
+        supabase
+          .from('stock_prices')
+          .select('ticker, close_price, date')
+          .in('ticker', currentTickers)
+          .gte('date', thirtyDaysAgoStr)
+          .order('date', { ascending: false }),
+      ])
 
-    for (const row of reportedRes.data ?? []) {
-      if (!reportedPriceMap.has(row.ticker) && row.close_price != null)
-        reportedPriceMap.set(row.ticker, row.close_price)
-    }
-    for (const row of currentRes.data ?? []) {
-      if (!currentPriceMap.has(row.ticker) && row.close_price != null)
-        currentPriceMap.set(row.ticker, row.close_price)
+      for (const row of reportedRes.data ?? []) {
+        if (!reportedPriceMap.has(row.ticker) && row.close_price != null)
+          reportedPriceMap.set(row.ticker, row.close_price)
+      }
+      for (const row of currentRes.data ?? []) {
+        if (!currentPriceMap.has(row.ticker) && row.close_price != null)
+          currentPriceMap.set(row.ticker, row.close_price)
+      }
+    } catch (e) {
+      console.error('Stock price fetch failed:', e)
     }
   }
 

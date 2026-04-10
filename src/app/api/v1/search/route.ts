@@ -1,6 +1,6 @@
 import { getAdminClient } from '@/lib/supabase-admin'
 
-export const revalidate = 0
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)

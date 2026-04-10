@@ -1,7 +1,7 @@
 import { getAdminClient } from '@/lib/supabase-admin'
 import { successResponse, errorResponse } from '@/lib/api-response'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DEFAULT_PAGE_SIZE = 50
