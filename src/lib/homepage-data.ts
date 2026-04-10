@@ -95,7 +95,10 @@ export async function getHomepageData(): Promise<HomepageData> {
   const cutoff90Str = new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10)
   const cutoff30Str = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10)
 
-  // Single parallel batch — 8 queries
+  // Single parallel batch — 7 queries
+  // Each query catches errors individually to prevent one failure from crashing the page
+  const fallback = { data: null, error: true } as const
+
   const [
     insiderCountRes,
     siCountRes,
@@ -105,25 +108,25 @@ export async function getHomepageData(): Promise<HomepageData> {
     insiderTradesRes,
     insidersRes,
   ] = await Promise.all([
-    supabase.from('insider_trades').select('id', { count: 'exact', head: true }),
-    supabase.from('superinvestors').select('id', { count: 'exact', head: true }),
-    supabase.from('superinvestors').select('id, name, fund_name'),
+    supabase.from('insider_trades').select('id', { count: 'exact', head: true }).then(r => r, () => ({ ...fallback, count: 0 })),
+    supabase.from('superinvestors').select('id', { count: 'exact', head: true }).then(r => r, () => ({ ...fallback, count: 0 })),
+    supabase.from('superinvestors').select('id, name, fund_name').then(r => r, () => fallback),
     supabase
       .from('portfolio_holdings')
       .select('investor_id, ticker, company_name, value_usd, quarter, filing_date')
-      .not('investor_id', 'is', null),
+      .not('investor_id', 'is', null).then(r => r, () => fallback),
     supabase
       .from('superinvestor_consensus')
       .select('ticker, company_name, investor_count')
       .order('investor_count', { ascending: false })
-      .limit(10),
+      .limit(10).then(r => r, () => fallback),
     supabase
       .from('insider_trades')
       .select('insider_id, ticker, company_name, trade_type, total_value, trade_date')
       .not('ticker', 'is', null)
       .neq('ticker', '')
-      .gte('trade_date', cutoff90Str),
-    supabase.from('insiders').select('id, name, primary_company'),
+      .gte('trade_date', cutoff90Str).then(r => r, () => fallback),
+    supabase.from('insiders').select('id, name, primary_company').then(r => r, () => fallback),
   ])
 
   // ── Stats ──────────────────────────────────────────────────────────────────
