@@ -6,7 +6,7 @@ export default function ContactPage() {
       <h1 className="text-3xl font-bold text-white mb-2">Contact</h1>
       <p className="text-sm text-white/40 mb-10">Get in touch with the DataHeimdall team.</p>
 
-      <div className="rounded-xl border border-white/8 bg-white/3 p-8 space-y-4 text-white/70 text-sm leading-relaxed">
+      <div className="card-glow rounded-xl bg-white/[0.03] p-8 space-y-4 text-white/70 text-sm leading-relaxed">
         <p>
           For questions, data corrections, feedback, or partnership inquiries, please
           email us at:

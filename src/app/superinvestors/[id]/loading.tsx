@@ -10,7 +10,7 @@ export default function Loading() {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-xl border border-white/8 bg-white/3 p-5">
+          <div key={i} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
             <div className="h-7 w-20 rounded bg-white/8 animate-pulse mb-1.5" />
             <div className="h-3 w-16 rounded bg-white/5 animate-pulse" />
           </div>

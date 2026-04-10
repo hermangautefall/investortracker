@@ -93,10 +93,10 @@ export function SuperinvestorTable({ investors }: { investors: InvestorRow[] }) 
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-white/8">
+    <div className="overflow-x-auto card-glow rounded-xl">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/8 bg-white/3">
+          <tr className="border-b border-white/8 bg-white/[0.04]">
             <Th col="name" label="Superinvestor" />
             <Th col="total_aum_usd" label="Portfolio" align="right" />
             {/* Stocks: hidden on mobile (< sm), shown sm+ */}
@@ -109,7 +109,7 @@ export function SuperinvestorTable({ investors }: { investors: InvestorRow[] }) 
           {sorted.map((inv) => {
             const hasData = inv.holdings_count > 0 || inv.total_aum_usd > 0
             return (
-              <tr key={inv.id} className="hover:bg-white/3 transition-colors">
+              <tr key={inv.id} className="hover:bg-white/[0.04] transition-colors">
                 <td className="px-4 py-2.5">
                   {hasData ? (
                     <Link

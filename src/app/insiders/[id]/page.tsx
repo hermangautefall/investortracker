@@ -42,7 +42,7 @@ type InsiderProfile = {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-white/8 bg-white/3 p-5">
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
       <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
       <p className="mt-1 text-xs text-white/40">{label}</p>
     </div>
@@ -124,15 +124,15 @@ export default async function InsiderProfilePage({
 
       {/* Trades table */}
       {trades.length === 0 ? (
-        <div className="rounded-lg border border-white/8 bg-white/3 p-16 text-center">
+        <div className="rounded-xl card-glow bg-white/[0.03] p-16 text-center">
           <p className="text-white/40 text-sm">No trade history found.</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-white/8">
+          <div className="overflow-x-auto card-glow rounded-xl">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
+                <tr className="border-b border-white/8 bg-white/[0.04]">
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Stock</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Type</th>
@@ -143,7 +143,7 @@ export default async function InsiderProfilePage({
               </thead>
               <tbody className="divide-y divide-white/5">
                 {trades.map((trade) => (
-                  <tr key={trade.id} className="hover:bg-white/3 transition-colors">
+                  <tr key={trade.id} className="hover:bg-white/[0.04] transition-colors">
                     <td className="px-4 py-3 text-white/60 whitespace-nowrap">
                       {formatDate(trade.trade_date)}
                     </td>

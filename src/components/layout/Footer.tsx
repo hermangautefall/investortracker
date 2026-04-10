@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Separator } from '@/components/ui/separator'
 
 const COLUMNS = [
   {
@@ -31,21 +30,34 @@ const COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/8 bg-[#0f1117] mt-auto">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        {/* Three-column grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 mb-10">
+    <footer className="border-t border-white/[0.06] bg-[#0a0c10] mt-auto">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
+        {/* Logo + columns */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-12">
+          {/* Brand column */}
+          <div className="col-span-2 sm:col-span-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-white">DH</span>
+              </div>
+              <span className="text-sm font-semibold text-white">DataHeimdall</span>
+            </div>
+            <p className="text-xs text-white/30 leading-relaxed max-w-[200px]">
+              Financial transparency data from public SEC filings.
+            </p>
+          </div>
+
           {COLUMNS.map((col) => (
             <div key={col.heading}>
-              <h3 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">
+              <h3 className="text-[11px] font-semibold text-white/30 uppercase tracking-[0.15em] mb-4">
                 {col.heading}
               </h3>
-              <ul className="space-y-2">
+              <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-white/50 hover:text-white transition-colors"
+                      className="text-sm text-white/40 hover:text-white/70 transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -56,9 +68,9 @@ export function Footer() {
           ))}
         </div>
 
-        <Separator className="bg-white/8 mb-6" />
+        <div className="h-px bg-gradient-to-r from-transparent via-white/8 to-transparent mb-6" />
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-white/30">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-white/25">
           <span>© {new Date().getFullYear()} DataHeimdall. All rights reserved.</span>
           <span>Data sourced from SEC EDGAR public filings.</span>
         </div>

@@ -16,19 +16,24 @@ export default async function StocksIndexPage() {
   const stocks = await getStocksIndex()
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-white mb-2">Stock Tracker</h1>
-      <p className="text-sm text-white/40 mb-10">
-        {stocks.length} tickers tracked · sorted by superinvestor ownership
-      </p>
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+      <div className="mb-10">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400 mb-3">
+          Stock Tracker
+        </p>
+        <h1 className="text-3xl font-bold text-white mb-3">Stock Tracker</h1>
+        <p className="text-sm text-white/40">
+          {stocks.length} tickers tracked · sorted by superinvestor ownership
+        </p>
+      </div>
 
       {stocks.length === 0 ? (
         <p className="text-white/40 text-sm">No data yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/8">
+        <div className="overflow-x-auto card-glow rounded-xl">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 bg-white/3">
+              <tr className="border-b border-white/8 bg-white/[0.04]">
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40 w-6 tabular-nums">#</th>
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Ticker</th>
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Company</th>
@@ -40,7 +45,7 @@ export default async function StocksIndexPage() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {stocks.map((s, i) => (
-                <tr key={s.ticker} className="hover:bg-white/3 transition-colors">
+                <tr key={s.ticker} className="hover:bg-white/[0.04] transition-colors">
                   <td className="px-3 py-2.5 text-white/25 text-xs tabular-nums">{i + 1}</td>
                   <td className="px-3 py-2.5">
                     <Link

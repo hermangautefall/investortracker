@@ -159,16 +159,16 @@ function SuperinvestorSection({
       </div>
 
       {holders.length === 0 ? (
-        <div className="rounded-xl border border-white/8 bg-white/3 p-8 text-center">
+        <div className="card-glow rounded-xl bg-white/[0.03] p-8 text-center">
           <p className="text-sm text-white/30">
             No tracked superinvestors currently hold {ticker}
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/8">
+        <div className="overflow-x-auto card-glow rounded-xl">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 bg-white/3">
+              <tr className="border-b border-white/8 bg-white/[0.04]">
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Investor</th>
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Fund</th>
                 <th scope="col" className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Weight</th>
@@ -180,7 +180,7 @@ function SuperinvestorSection({
             </thead>
             <tbody className="divide-y divide-white/5">
               {holders.map((h) => (
-                <tr key={h.investor_id} className="hover:bg-white/3 transition-colors">
+                <tr key={h.investor_id} className="hover:bg-white/[0.04] transition-colors">
                   <td className="px-3 py-2.5">
                     <Link
                       href={`/superinvestors/${h.investor_id}`}
@@ -261,7 +261,7 @@ function InsiderSection({
       </div>
 
       {trades.length === 0 ? (
-        <div className="rounded-xl border border-white/8 bg-white/3 p-8 text-center">
+        <div className="card-glow rounded-xl bg-white/[0.03] p-8 text-center">
           <p className="text-sm text-white/30">
             No open-market insider trades in the last 12 months.
           </p>
@@ -270,10 +270,10 @@ function InsiderSection({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/8">
+        <div className="overflow-x-auto card-glow rounded-xl">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 bg-white/3">
+              <tr className="border-b border-white/8 bg-white/[0.04]">
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Insider</th>
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Role</th>
@@ -290,7 +290,7 @@ function InsiderSection({
                   className={`transition-colors ${
                     t.cluster
                       ? 'bg-amber-500/5 hover:bg-amber-500/10'
-                      : 'hover:bg-white/3'
+                      : 'hover:bg-white/[0.04]'
                   }`}
                 >
                   <td className="px-3 py-2.5 text-white/60 whitespace-nowrap text-xs">
@@ -362,17 +362,17 @@ function CongressSection({
       </div>
 
       {trades.length === 0 ? (
-        <div className="rounded-xl border border-white/8 bg-white/3 p-8 text-center">
+        <div className="card-glow rounded-xl bg-white/[0.03] p-8 text-center">
           <p className="text-sm text-white/30">Congressional trade data coming soon.</p>
           <p className="text-xs text-white/20 mt-1">
             We are sourcing STOCK Act disclosures and will display them here shortly.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/8">
+        <div className="overflow-x-auto card-glow rounded-xl">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 bg-white/3">
+              <tr className="border-b border-white/8 bg-white/[0.04]">
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Politician</th>
                 <th scope="col" className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Chamber</th>
@@ -382,7 +382,7 @@ function CongressSection({
             </thead>
             <tbody className="divide-y divide-white/5">
               {trades.map((t) => (
-                <tr key={t.id} className="hover:bg-white/3 transition-colors">
+                <tr key={t.id} className="hover:bg-white/[0.04] transition-colors">
                   <td className="px-3 py-2.5 text-white/60 whitespace-nowrap text-xs">
                     {formatDate(t.trade_date)}
                   </td>
@@ -459,7 +459,7 @@ function RelatedContent({ ticker }: { ticker: string }) {
           <Link
             key={item.href}
             href={item.href}
-            className="rounded-xl border border-white/8 bg-white/3 p-4 hover:border-white/15 transition-colors group"
+            className="card-glow rounded-xl bg-white/[0.03] p-4 group"
           >
             <p className="text-sm font-medium text-white group-hover:text-white/80 transition-colors">
               {item.title}

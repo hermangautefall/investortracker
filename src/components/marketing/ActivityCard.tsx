@@ -38,12 +38,12 @@ export function ActivityCard({
   const isBuy = isBuyFirst ? opt1 === 0 : opt1 === 1
 
   return (
-    <div className="rounded-xl border border-white/8 bg-white/3 flex flex-col overflow-hidden">
+    <div className="card-glow rounded-xl bg-white/[0.03] flex flex-col overflow-hidden backdrop-blur-sm">
       {/* Card header */}
       <div className="px-4 pt-4 pb-3 border-b border-white/5">
         <div className="flex items-start justify-between gap-2 mb-2.5">
           <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider">{title}</span>
-          <Link href={seeMoreHref} className="text-[10px] text-white/30 hover:text-white/60 transition-colors whitespace-nowrap">
+          <Link href={seeMoreHref} className="text-[10px] text-violet-400/50 hover:text-violet-300 transition-colors whitespace-nowrap">
             see more →
           </Link>
         </div>
@@ -96,7 +96,7 @@ export function ActivityCard({
             </thead>
             <tbody className="divide-y divide-white/4">
               {rows.map((row, i) => (
-                <tr key={`${row.ticker}-${i}`} className="hover:bg-white/3 transition-colors">
+                <tr key={`${row.ticker}-${i}`} className="hover:bg-white/[0.04] transition-colors">
                   <td className="px-4 py-2">
                     <Link
                       href={`/tickers/${row.ticker}`}

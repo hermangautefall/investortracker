@@ -207,13 +207,19 @@ export default async function SuperInvestorProfilePage({
   const supabase = getAdminClient()
 
   // Fetch investor + all holdings in parallel
-  const [investorRes, allHoldingsRes] = await Promise.all([
-    supabase.from('superinvestors').select('id, name, fund_name, cik').eq('id', id).maybeSingle(),
-    supabase
-      .from('portfolio_holdings')
-      .select('ticker, company_name, shares, value_usd, portfolio_weight, quarter')
-      .eq('investor_id', id),
-  ])
+  let investorRes, allHoldingsRes
+  try {
+    ;[investorRes, allHoldingsRes] = await Promise.all([
+      supabase.from('superinvestors').select('id, name, fund_name, cik').eq('id', id).maybeSingle(),
+      supabase
+        .from('portfolio_holdings')
+        .select('ticker, company_name, shares, value_usd, portfolio_weight, quarter')
+        .eq('investor_id', id),
+    ])
+  } catch (e) {
+    console.error('Superinvestor profile fetch failed:', e)
+    notFound()
+  }
 
   if (!investorRes.data) notFound()
   const investor = investorRes.data as { id: string; name: string; fund_name: string | null; cik: string | null }
@@ -370,19 +376,19 @@ export default async function SuperInvestorProfilePage({
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="rounded-xl border border-white/8 bg-white/3 p-5">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
           <p className="text-2xl font-bold text-white tabular-nums">{currentHoldings.length}</p>
           <p className="mt-1 text-xs text-white/40">Positions</p>
         </div>
-        <div className="rounded-xl border border-white/8 bg-white/3 p-5">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
           <p className="text-2xl font-bold text-white tabular-nums">{formatValue(selectedAum)}</p>
           <p className="mt-1 text-xs text-white/40">Portfolio Value</p>
         </div>
-        <div className="rounded-xl border border-white/8 bg-white/3 p-5">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
           <p className="text-2xl font-bold text-white tabular-nums">{quarters.length}</p>
           <p className="mt-1 text-xs text-white/40">Quarters tracked</p>
         </div>
-        <div className="rounded-xl border border-white/8 bg-white/3 p-5">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
           <p className="text-2xl font-bold text-white tabular-nums">{formatQuarter(latestQuarter)}</p>
           <p className="mt-1 text-xs text-white/40">Latest filing</p>
         </div>
@@ -391,13 +397,13 @@ export default async function SuperInvestorProfilePage({
       {/* Charts: Donut + Portfolio value line */}
       {currentHoldings.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-8">
-          <div className="lg:col-span-3 rounded-xl border border-white/8 bg-white/3 p-4">
+          <div className="lg:col-span-3 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
             <p className="text-xs font-medium text-white/40 uppercase tracking-wide mb-3">
               Portfolio Allocation — {formatQuarter(selectedQuarter)}
             </p>
             <DonutChart data={donutData} />
           </div>
-          <div className="lg:col-span-2 rounded-xl border border-white/8 bg-white/3 p-4">
+          <div className="lg:col-span-2 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
             <p className="text-xs font-medium text-white/40 uppercase tracking-wide mb-3">
               Portfolio Value Over Time
             </p>
@@ -435,14 +441,14 @@ export default async function SuperInvestorProfilePage({
       {tab === 'holdings' && (
         <>
           {currentHoldings.length === 0 ? (
-            <div className="rounded-lg border border-white/8 bg-white/3 p-12 text-center">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-12 text-center">
               <p className="text-white/40 text-sm">No holdings data for this quarter.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-white/8">
+            <div className="overflow-x-auto card-glow rounded-xl">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/8 bg-white/3">
+                  <tr className="border-b border-white/8 bg-white/[0.04]">
                     <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-white/40 w-8 hidden sm:table-cell">#</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-white/40">Ticker</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-white/40 hidden md:table-cell">
@@ -476,7 +482,7 @@ export default async function SuperInvestorProfilePage({
                     const maxWeight = currentHoldings[0]?.portfolio_weight ?? 1
 
                     return (
-                      <tr key={`${h.ticker}-${idx}`} className="hover:bg-white/3 transition-colors group">
+                      <tr key={`${h.ticker}-${idx}`} className="hover:bg-white/[0.04] transition-colors group">
                         <td className="px-4 py-3 text-white/25 text-xs hidden sm:table-cell">{idx + 1}</td>
                         <td className="px-4 py-3">
                           {h.ticker ? (
@@ -614,7 +620,7 @@ export default async function SuperInvestorProfilePage({
       {tab !== 'holdings' && (
         <>
           {changedHoldings.length === 0 ? (
-            <div className="rounded-lg border border-white/8 bg-white/3 p-12 text-center">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-12 text-center">
               <p className="text-white/40 text-sm">
                 {!prevQuarter
                   ? 'No previous quarter available for comparison.'
@@ -624,10 +630,10 @@ export default async function SuperInvestorProfilePage({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-white/8">
+            <div className="overflow-x-auto card-glow rounded-xl">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/8 bg-white/3">
+                  <tr className="border-b border-white/8 bg-white/[0.04]">
                     <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-white/40 w-8 hidden sm:table-cell">#</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-white/40">Ticker</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-white/40 hidden sm:table-cell">
@@ -643,7 +649,7 @@ export default async function SuperInvestorProfilePage({
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {changedHoldings.map((h, idx) => (
-                    <tr key={`${h.ticker}-${idx}`} className="hover:bg-white/3 transition-colors group">
+                    <tr key={`${h.ticker}-${idx}`} className="hover:bg-white/[0.04] transition-colors group">
                       <td className="px-4 py-3 text-white/25 text-xs">{idx + 1}</td>
                       <td className="px-4 py-3">
                         {h.ticker ? (

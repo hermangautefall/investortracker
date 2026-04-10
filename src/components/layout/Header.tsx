@@ -25,11 +25,16 @@ export function Header() {
   const pathname = usePathname()
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/8 bg-[#0f1117]/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#0f1117]/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-4">
         {/* Logo */}
-        <Link href="/" className="text-sm font-semibold text-white hover:text-white/80 transition-colors shrink-0">
-          DataHeimdall
+        <Link href="/" className="flex items-center gap-2 shrink-0 group">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+            <span className="text-[10px] font-bold text-white">DH</span>
+          </div>
+          <span className="text-sm font-semibold text-white group-hover:text-white/80 transition-colors">
+            DataHeimdall
+          </span>
         </Link>
 
         {/* Search — desktop: centered, mobile: hidden (shown below) */}

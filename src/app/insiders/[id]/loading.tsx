@@ -11,7 +11,7 @@ export default function Loading() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-xl border border-white/8 bg-white/3 p-4">
+          <div key={i} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
             <div className="h-6 w-16 rounded bg-white/8 animate-pulse mb-1" />
             <div className="h-3 w-24 rounded bg-white/5 animate-pulse" />
           </div>

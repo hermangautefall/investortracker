@@ -52,7 +52,7 @@ export default function AboutPage() {
         <section>
           <h2 className="text-lg font-semibold text-white mb-3">Data Sources</h2>
           <div className="space-y-3">
-            <div className="rounded-lg border border-white/8 bg-white/3 p-4">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
               <p className="font-medium text-white mb-1">SEC EDGAR</p>
               <p>
                 Form 4 filings are sourced directly from the U.S. Securities and
@@ -60,7 +60,7 @@ export default function AboutPage() {
                 and reflects official filings as submitted.
               </p>
             </div>
-            <div className="rounded-lg border border-white/8 bg-white/3 p-4">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
               <p className="font-medium text-white mb-1">STOCK Act Disclosures</p>
               <p>
                 Congressional trade disclosures are sourced from public disclosure
@@ -91,7 +91,7 @@ export default function AboutPage() {
               { name: 'Vercel', desc: 'Hosting' },
               { name: 'GitHub Actions', desc: 'Scheduling' },
             ].map((item) => (
-              <div key={item.name} className="rounded-lg border border-white/8 bg-white/3 p-3">
+              <div key={item.name} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
                 <p className="font-medium text-white text-xs">{item.name}</p>
                 <p className="text-white/40 text-xs">{item.desc}</p>
               </div>

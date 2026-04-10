@@ -33,11 +33,16 @@ export default function BlogPage({
   const categoriesWithAll = Object.keys(CATEGORIES)
 
   return (
-    <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-white mb-2">Blog</h1>
-      <p className="text-sm text-white/40 mb-8">
-        Guides on insider trading, 13F filings, and congressional stock disclosures.
-      </p>
+    <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
+      <div className="mb-10">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400 mb-3">
+          Insights & Guides
+        </p>
+        <h1 className="text-3xl font-bold text-white mb-3 gradient-text">Blog</h1>
+        <p className="text-sm text-white/40">
+          Guides on insider trading, 13F filings, and congressional stock disclosures.
+        </p>
+      </div>
 
       {/* Category filter tabs */}
       <div className="flex flex-wrap gap-2 mb-10">
@@ -47,10 +52,10 @@ export default function BlogPage({
             <Link
               key={key}
               href={key === 'all' ? '/blog' : `/blog?category=${key}`}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'
+                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm shadow-violet-500/20'
+                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 border border-white/[0.06]'
               }`}
             >
               {CATEGORIES[key]}
@@ -64,16 +69,16 @@ export default function BlogPage({
           No articles in this category yet.
         </p>
       ) : (
-        <div className="flex flex-col divide-y divide-white/8">
+        <div className="flex flex-col gap-6">
           {filtered.map((post) => (
-            <article key={post.slug} className="py-8">
+            <article key={post.slug} className="card-glow rounded-xl bg-white/[0.02] p-6 group">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-400">
                   {CATEGORIES[post.category] ?? post.category}
                 </span>
-                <span className="text-white/20">·</span>
+                <span className="text-white/15">·</span>
                 <span className="text-xs text-white/30">{post.readingTime}</span>
-                <span className="text-white/20">·</span>
+                <span className="text-white/15">·</span>
                 {post.publishedAt && (
                   <time className="text-xs text-white/30" dateTime={post.publishedAt}>
                     {new Date(post.publishedAt).toLocaleDateString('en-US', {
@@ -85,19 +90,19 @@ export default function BlogPage({
                 )}
               </div>
 
-              <Link href={`/blog/${post.slug}`} className="group block mb-2">
-                <h2 className="text-lg font-semibold text-white group-hover:text-white/80 transition-colors leading-snug">
+              <Link href={`/blog/${post.slug}`} className="block mb-2">
+                <h2 className="text-lg font-semibold text-white group-hover:text-violet-300 transition-colors leading-snug">
                   {post.title}
                 </h2>
               </Link>
 
-              <p className="text-sm text-white/50 leading-relaxed mb-4 max-w-2xl">
+              <p className="text-sm text-white/45 leading-relaxed mb-4 max-w-2xl">
                 {post.description}
               </p>
 
               <Link
                 href={`/blog/${post.slug}`}
-                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                className="text-xs text-violet-400/70 hover:text-violet-300 transition-colors"
               >
                 Read article →
               </Link>

@@ -73,14 +73,14 @@ function SummaryCard({
 }) {
   if (!summary) {
     return (
-      <div className="rounded-xl border border-white/8 bg-white/3 p-4">
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
         <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">{title}</h3>
         <p className="text-sm text-white/30">{empty}</p>
       </div>
     )
   }
   return (
-    <div className="rounded-xl border border-white/8 bg-white/3 p-4">
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
       <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4">{title}</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -195,7 +195,7 @@ export default async function TickerActivityPage({
         </div>
 
         {superinvestorHoldings.length === 0 ? (
-          <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
+          <div className="card-glow rounded-xl bg-white/[0.03] p-8 text-center">
             <p className="text-sm text-white/30">
               No tracked superinvestors currently hold {ticker}
             </p>
@@ -204,7 +204,7 @@ export default async function TickerActivityPage({
           <div className="overflow-x-auto rounded-xl border border-white/8">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
+                <tr className="border-b border-white/8 bg-white/[0.04]">
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Investor</th>
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40 hidden sm:table-cell">Fund</th>
                   <th className="px-3 py-2.5 text-right text-xs font-medium text-white/40">Weight</th>
@@ -215,7 +215,7 @@ export default async function TickerActivityPage({
               </thead>
               <tbody className="divide-y divide-white/5">
                 {superinvestorHoldings.map((h) => (
-                  <tr key={h.investor_id} className="hover:bg-white/3 transition-colors">
+                  <tr key={h.investor_id} className="hover:bg-white/[0.04] transition-colors">
                     <td className="px-3 py-2.5">
                       <Link
                         href={`/superinvestors/${h.investor_id}`}
@@ -270,14 +270,14 @@ export default async function TickerActivityPage({
           <span className="ml-2 text-xs text-white/30 font-normal">last 90 days</span>
         </h2>
         {insiderTrades.length === 0 ? (
-          <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
+          <div className="card-glow rounded-xl bg-white/[0.03] p-8 text-center">
             <p className="text-sm text-white/30">No insider trades in the last 90 days.</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-white/8">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
+                <tr className="border-b border-white/8 bg-white/[0.04]">
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Insider</th>
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Type</th>
@@ -286,7 +286,7 @@ export default async function TickerActivityPage({
               </thead>
               <tbody className="divide-y divide-white/5">
                 {insiderTrades.map((trade) => (
-                  <tr key={trade.id} className="hover:bg-white/3 transition-colors">
+                  <tr key={trade.id} className="hover:bg-white/[0.04] transition-colors">
                     <td className="px-3 py-2.5 text-white/60 whitespace-nowrap text-xs">
                       {formatDate(trade.trade_date)}
                     </td>
@@ -333,7 +333,7 @@ export default async function TickerActivityPage({
           <span className="ml-2 text-xs text-white/30 font-normal">last 90 days</span>
         </h2>
         {congressTrades.length === 0 ? (
-          <div className="rounded-lg border border-white/8 bg-white/3 p-8 text-center">
+          <div className="card-glow rounded-xl bg-white/[0.03] p-8 text-center">
             <p className="text-sm text-white/30">
               Congressional trade data is being sourced and will appear here shortly.
             </p>
@@ -342,7 +342,7 @@ export default async function TickerActivityPage({
           <div className="overflow-x-auto rounded-xl border border-white/8">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
+                <tr className="border-b border-white/8 bg-white/[0.04]">
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Date</th>
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Politician</th>
                   <th className="px-3 py-2.5 text-left text-xs font-medium text-white/40">Type</th>
@@ -351,7 +351,7 @@ export default async function TickerActivityPage({
               </thead>
               <tbody className="divide-y divide-white/5">
                 {congressTrades.map((trade) => (
-                  <tr key={trade.id} className="hover:bg-white/3 transition-colors">
+                  <tr key={trade.id} className="hover:bg-white/[0.04] transition-colors">
                     <td className="px-3 py-2.5 text-white/60 whitespace-nowrap text-xs">
                       {formatDate(trade.trade_date)}
                     </td>

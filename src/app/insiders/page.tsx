@@ -153,8 +153,13 @@ export default async function InsidersPage({
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-white mb-6">Insider Trades</h1>
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mb-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400 mb-3">
+          SEC Form 4 Disclosures
+        </p>
+        <h1 className="text-3xl font-bold text-white">Insider Trades</h1>
+      </div>
 
       {/* Cluster strip */}
       {clusters.length > 0 && (
@@ -199,7 +204,7 @@ export default async function InsidersPage({
 
       {/* Empty */}
       {!error && trades.length === 0 && (
-        <div className="rounded-lg border border-white/8 bg-white/3 p-16 text-center">
+        <div className="card-glow rounded-xl bg-white/[0.03] p-16 text-center">
           <p className="text-white/40 text-sm">No trades found for the selected filters.</p>
         </div>
       )}
@@ -207,10 +212,10 @@ export default async function InsidersPage({
       {/* Table */}
       {!error && trades.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-xl border border-white/8">
+          <div className="overflow-x-auto card-glow rounded-xl">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
+                <tr className="border-b border-white/8 bg-white/[0.04]">
                   {(['Date', 'Insider', 'Stock', 'Type', 'Shares', 'Value', 'Src'] as const).map((h, i) => (
                     <th
                       key={h}
@@ -228,7 +233,7 @@ export default async function InsidersPage({
               </thead>
               <tbody className="divide-y divide-white/5">
                 {trades.map((trade) => (
-                  <tr key={trade.id} className="hover:bg-white/3 transition-colors">
+                  <tr key={trade.id} className="hover:bg-white/[0.04] transition-colors">
                     <td className="px-4 py-3 text-white/60 whitespace-nowrap">
                       {formatDate(trade.trade_date)}
                     </td>

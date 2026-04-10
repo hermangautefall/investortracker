@@ -48,17 +48,20 @@ type HoldingRaw = {
 async function getPageData(): Promise<PageData> {
   const supabase = getAdminClient()
 
+  // Wrap each query individually so one failure doesn't crash the page
   const [investorsRes, holdingsRes, consensusRes] = await Promise.all([
-    supabase.from('superinvestors').select('id, name, fund_name'),
+    supabase.from('superinvestors').select('id, name, fund_name').then(r => r, () => ({ data: null, error: true })),
     supabase
       .from('portfolio_holdings')
       .select('investor_id, ticker, company_name, value_usd, quarter, filing_date')
-      .not('investor_id', 'is', null),
+      .not('investor_id', 'is', null)
+      .then(r => r, () => ({ data: null, error: true })),
     supabase
       .from('superinvestor_consensus')
       .select('ticker, company_name, investor_count')
       .order('investor_count', { ascending: false })
-      .limit(10),
+      .limit(10)
+      .then(r => r, () => ({ data: null, error: true })),
   ])
 
   const investors = investorsRes.data ?? []
@@ -234,10 +237,10 @@ function CardShell({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-xl border border-white/8 bg-white/3 flex flex-col overflow-hidden">
+    <div className="card-glow rounded-xl bg-white/[0.03] flex flex-col overflow-hidden backdrop-blur-sm">
       <div className="px-4 pt-3.5 pb-3 border-b border-white/5 flex items-center justify-between">
         <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider">{title}</span>
-        <Link href={seeMoreHref} className="text-[10px] text-white/30 hover:text-white/60 transition-colors">
+        <Link href={seeMoreHref} className="text-[10px] text-violet-400/50 hover:text-violet-300 transition-colors">
           see more →
         </Link>
       </div>
@@ -268,7 +271,7 @@ function TickerRows({
       </thead>
       <tbody className="divide-y divide-white/4">
         {rows.map((row, i) => (
-          <tr key={`${row.ticker}-${i}`} className="hover:bg-white/3 transition-colors">
+          <tr key={`${row.ticker}-${i}`} className="hover:bg-white/[0.04] transition-colors">
             <td className="px-3 py-1.5">
               <Link href={`/tickers/${row.ticker}`} className="font-mono font-bold text-white hover:text-white/70 transition-colors">
                 {row.ticker}
@@ -298,12 +301,15 @@ export default async function SuperInvestorsPage() {
   ] as const
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Superinvestors</h1>
-        <p className="mt-1 text-sm text-white/50">
-          List of value investing gurus – portfolios sourced from SEC 13F filings
+      <div className="mb-10">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400 mb-3">
+          13F Portfolio Tracking
+        </p>
+        <h1 className="text-3xl font-bold text-white mb-2">Superinvestors</h1>
+        <p className="text-sm text-white/40">
+          Value investing gurus — portfolios sourced from SEC 13F filings
         </p>
       </div>
 
@@ -312,7 +318,7 @@ export default async function SuperInvestorsPage() {
         {/* Left: sortable table (60%) */}
         <div className="w-full lg:w-[60%] shrink-0">
           {investorRows.length === 0 ? (
-            <div className="rounded-lg border border-white/8 bg-white/3 p-16 text-center">
+            <div className="card-glow rounded-xl bg-white/[0.03] p-16 text-center">
               <p className="text-white/40 text-sm">No investor data yet.</p>
             </div>
           ) : (

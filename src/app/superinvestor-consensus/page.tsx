@@ -120,15 +120,15 @@ export default async function SuperInvestorConsensusPage({
       </div>
 
       {enriched.length === 0 ? (
-        <div className="rounded-lg border border-white/8 bg-white/3 p-16 text-center">
+        <div className="card-glow rounded-xl bg-white/[0.03] p-16 text-center">
           <p className="text-white/40 text-sm">No data for the selected filter.</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-white/8">
+          <div className="overflow-x-auto card-glow rounded-xl">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
+                <tr className="border-b border-white/8 bg-white/[0.04]">
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide w-8">
                     #
                   </th>
@@ -157,7 +157,7 @@ export default async function SuperInvestorConsensusPage({
               </thead>
               <tbody className="divide-y divide-white/5">
                 {enriched.map((row, idx) => (
-                  <tr key={row.ticker ?? idx} className="hover:bg-white/3 transition-colors">
+                  <tr key={row.ticker ?? idx} className="hover:bg-white/[0.04] transition-colors">
                     <td className="px-4 py-3 text-white/30 text-xs">
                       {from + idx + 1}
                     </td>

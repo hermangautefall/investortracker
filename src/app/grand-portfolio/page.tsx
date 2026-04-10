@@ -425,11 +425,14 @@ export default async function GrandPortfolioPage({
     : 'Holders'
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Grand Portfolio</h1>
-        <p className="mt-1 text-sm text-white/40">{SOURCE_LABELS[source]}</p>
+      <div className="mb-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400 mb-3">
+          Aggregated Holdings
+        </p>
+        <h1 className="text-3xl font-bold text-white mb-2">Grand Portfolio</h1>
+        <p className="text-sm text-white/40">{SOURCE_LABELS[source]}</p>
       </div>
 
       {/* Data source switch — full width on mobile */}
@@ -532,7 +535,7 @@ export default async function GrandPortfolioPage({
 
       {/* Empty */}
       {!hasError && total === 0 && (
-        <div className="rounded-lg border border-white/8 bg-white/3 p-16 text-center">
+        <div className="rounded-xl card-glow bg-white/[0.03] p-16 text-center">
           <p className="text-white/40 text-sm">No stocks match the selected filter.</p>
         </div>
       )}
@@ -540,10 +543,10 @@ export default async function GrandPortfolioPage({
       {/* INSIDERS TABLE */}
       {source === 'insiders' && insiderData && insiderData.rows.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-xl border border-white/8">
+          <div className="overflow-x-auto card-glow rounded-xl">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
+                <tr className="border-b border-white/8 bg-white/[0.04]">
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide w-12">#</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Symbol</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Company</th>
@@ -564,7 +567,7 @@ export default async function GrandPortfolioPage({
                   const showSellBias = meta.isSell || row.sell_count > row.buy_count
                   const showBuyBias = !meta.isSell && row.buy_count > row.sell_count
                   return (
-                    <tr key={row.ticker} className="hover:bg-white/3 transition-colors">
+                    <tr key={row.ticker} className="hover:bg-white/[0.04] transition-colors">
                       <td className="px-4 py-3 text-white/30 tabular-nums text-xs">{rank}</td>
                       <td className="px-4 py-3">
                         <Link href={`/tickers/${row.ticker}`} className="font-mono font-bold text-white hover:text-white/70 transition-colors">
@@ -606,10 +609,10 @@ export default async function GrandPortfolioPage({
 
       {/* SUPERINVESTORS TABLE */}
       {source === 'superinvestors' && superData && superData.rows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-white/8">
+        <div className="overflow-x-auto card-glow rounded-xl">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 bg-white/3">
+              <tr className="border-b border-white/8 bg-white/[0.04]">
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide w-12">#</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Symbol</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Company</th>
@@ -620,7 +623,7 @@ export default async function GrandPortfolioPage({
             </thead>
             <tbody className="divide-y divide-white/5">
               {superData.rows.map((row, i) => (
-                <tr key={row.ticker} className="hover:bg-white/3 transition-colors">
+                <tr key={row.ticker} className="hover:bg-white/[0.04] transition-colors">
                   <td className="px-4 py-3 text-white/30 tabular-nums text-xs">{globalRankOffset + i + 1}</td>
                   <td className="px-4 py-3">
                     <Link href={`/tickers/${row.ticker}`} className="font-mono font-bold text-white hover:text-white/70 transition-colors">
@@ -646,10 +649,10 @@ export default async function GrandPortfolioPage({
 
       {/* ALL / COMBINED TABLE */}
       {source === 'all' && combinedData && combinedData.rows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-white/8">
+        <div className="overflow-x-auto card-glow rounded-xl">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 bg-white/3">
+              <tr className="border-b border-white/8 bg-white/[0.04]">
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide w-12">#</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Symbol</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase tracking-wide">Company</th>
@@ -661,7 +664,7 @@ export default async function GrandPortfolioPage({
             </thead>
             <tbody className="divide-y divide-white/5">
               {combinedData.rows.map((row, i) => (
-                <tr key={row.ticker} className="hover:bg-white/3 transition-colors">
+                <tr key={row.ticker} className="hover:bg-white/[0.04] transition-colors">
                   <td className="px-4 py-3 text-white/30 tabular-nums text-xs">{globalRankOffset + i + 1}</td>
                   <td className="px-4 py-3">
                     <Link href={`/tickers/${row.ticker}`} className="font-mono font-bold text-white hover:text-white/70 transition-colors">

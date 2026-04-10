@@ -106,14 +106,14 @@ export default async function BlogPostPage({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
 
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-white/30 mb-10" aria-label="Breadcrumb">
-          <Link href="/blog" className="hover:text-white/60 transition-colors">
+        <nav className="flex items-center gap-2 text-sm text-white/25 mb-10" aria-label="Breadcrumb">
+          <Link href="/blog" className="hover:text-violet-400 transition-colors">
             Blog
           </Link>
-          <span>›</span>
+          <span className="text-white/15">›</span>
           <Link
             href={`/blog?category=${post.category}`}
-            className="hover:text-white/60 transition-colors"
+            className="hover:text-violet-400 transition-colors"
           >
             {CATEGORIES[post.category] ?? post.category}
           </Link>
@@ -251,7 +251,7 @@ export default async function BlogPostPage({
                 {prev ? (
                   <Link
                     href={`/blog/${prev.slug}`}
-                    className="group flex flex-col gap-1.5 rounded-xl border border-white/8 bg-white/3 p-5 hover:border-white/15 transition-colors"
+                    className="group flex flex-col gap-1.5 card-glow rounded-xl bg-white/[0.03] p-5"
                   >
                     <span className="inline-flex items-center gap-1 text-xs text-white/30 group-hover:text-white/50 transition-colors">
                       <ChevronLeft size={12} /> Previous article
@@ -267,7 +267,7 @@ export default async function BlogPostPage({
                 {next ? (
                   <Link
                     href={`/blog/${next.slug}`}
-                    className="group flex flex-col gap-1.5 rounded-xl border border-white/8 bg-white/3 p-5 hover:border-white/15 transition-colors sm:text-right"
+                    className="group flex flex-col gap-1.5 card-glow rounded-xl bg-white/[0.03] p-5 sm:text-right"
                   >
                     <span className="inline-flex items-center gap-1 text-xs text-white/30 group-hover:text-white/50 transition-colors sm:justify-end">
                       Next article <ChevronRight size={12} />

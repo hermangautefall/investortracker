@@ -36,7 +36,7 @@ export default function PoliticiansPage() {
       </div>
 
       {/* Notice */}
-      <div className="rounded-xl border border-white/8 bg-white/3 p-10 text-center flex flex-col items-center gap-4">
+      <div className="card-glow rounded-xl bg-white/[0.03] p-10 text-center flex flex-col items-center gap-4">
         <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
           <Info size={18} className="text-white/40" />
         </div>

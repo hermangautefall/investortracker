@@ -50,7 +50,7 @@ export function TableOfContents({ headings }: Props) {
 
   return (
     <nav aria-label="Table of contents">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400/40 mb-4">
         Contents
       </p>
       <ul className="space-y-0.5">

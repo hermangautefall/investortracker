@@ -30,7 +30,7 @@ export function RelatedArticles({ currentSlug, category }: Props) {
   return (
     <section
       aria-label="Related articles"
-      className="mt-16 rounded-2xl border border-white/8 bg-white/3 p-6 sm:p-8"
+      className="mt-16 card-glow rounded-2xl bg-white/[0.03] p-6 sm:p-8"
     >
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/30 mb-6">
         More on {categoryLabel}
