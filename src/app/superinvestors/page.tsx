@@ -55,6 +55,7 @@ async function getPageData(): Promise<PageData> {
       .from('portfolio_holdings')
       .select('investor_id, ticker, company_name, value_usd, quarter, filing_date')
       .not('investor_id', 'is', null)
+      .limit(50000)
       .then(r => r, () => ({ data: null, error: true })),
     supabase
       .from('superinvestor_consensus')

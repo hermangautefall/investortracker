@@ -12,7 +12,8 @@ export async function GET() {
       supabase.from('superinvestors').select('id, name, fund_name, cik'),
       supabase
         .from('portfolio_holdings')
-        .select('investor_id, ticker, value_usd, quarter'),
+        .select('investor_id, ticker, value_usd, quarter')
+        .limit(50000),
     ])
 
     if (investorsRes.error) return errorResponse(investorsRes.error.message, 500)

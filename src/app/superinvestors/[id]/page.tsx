@@ -214,7 +214,8 @@ export default async function SuperInvestorProfilePage({
       supabase
         .from('portfolio_holdings')
         .select('ticker, company_name, shares, value_usd, portfolio_weight, quarter')
-        .eq('investor_id', id),
+        .eq('investor_id', id)
+        .limit(10000),
     ])
   } catch (e) {
     console.error('Superinvestor profile fetch failed:', e)

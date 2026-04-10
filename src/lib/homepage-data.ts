@@ -114,7 +114,8 @@ export async function getHomepageData(): Promise<HomepageData> {
     supabase
       .from('portfolio_holdings')
       .select('investor_id, ticker, company_name, value_usd, quarter, filing_date')
-      .not('investor_id', 'is', null).then(r => r, () => fallback),
+      .not('investor_id', 'is', null)
+      .limit(50000).then(r => r, () => fallback),
     supabase
       .from('superinvestor_consensus')
       .select('ticker, company_name, investor_count')

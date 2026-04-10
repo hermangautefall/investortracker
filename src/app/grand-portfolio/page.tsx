@@ -198,6 +198,7 @@ async function getSuperinvestorData(minOwners: number, page: number) {
     .select('ticker, company_name, investor_id, value_usd, quarter')
     .eq('quarter', latestQ)
     .not('ticker', 'is', null)
+    .limit(50000)
 
   if (error || !holdings) return { rows: [], total: 0, totalInvestors: 0, error }
 
@@ -265,13 +266,15 @@ async function getCombinedData(minOwners: number, page: number) {
       .from('insider_trades')
       .select('ticker, insider_id')
       .not('ticker', 'is', null)
-      .neq('ticker', ''),
+      .neq('ticker', '')
+      .limit(50000),
     latestQ
       ? supabase
           .from('portfolio_holdings')
           .select('ticker, company_name, investor_id')
           .eq('quarter', latestQ)
           .not('ticker', 'is', null)
+          .limit(50000)
       : Promise.resolve({ data: [] as { ticker: string | null; company_name: string | null; investor_id: string | null }[], error: null }),
   ])
 
